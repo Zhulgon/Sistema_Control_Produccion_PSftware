@@ -1,5 +1,7 @@
-# Patrones_Software_Rubiano
-Repo destinado a la materia patrones de softwre de Ing. Sistemas.
+# Patrones_Software_
+Repo destinado a la materia patrones de software de Ing. Sistemas.
+Sistema de control de producción mensual.
+
 Integrantes:
 Juan Sebastian Rubiano Romero
 Angie Lucero Vargas Amado
