@@ -1,0 +1,8 @@
+@startuml
+class MESController <<Singleton>> {
+  - _instance : MESController
+  - __new__()
+  + plan_production()
+  + calculate_oee()
+}
+@enduml

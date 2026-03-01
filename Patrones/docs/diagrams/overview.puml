@@ -1,0 +1,8 @@
+@startuml
+class MESController <<Singleton>>
+abstract class MachineFactory <<Factory Method>>
+interface Machine
+
+MESController --> MachineFactory : solicita creación
+MachineFactory --> Machine : crea y retorna
+@enduml
