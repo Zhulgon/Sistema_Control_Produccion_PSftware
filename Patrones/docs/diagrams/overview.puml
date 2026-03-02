@@ -1,8 +1,32 @@
 @startuml
+
 class MESController <<Singleton>>
-abstract class MachineFactory <<Factory Method>>
+
+abstract class MachineFactory <<Factory Method>> {
+  + create_machine() : Machine
+}
+
 interface Machine
 
+class CNCFactory
+class RobotFactory
+
+class CNCMachine
+class RobotMachine
+
+' Relaciones Singleton
 MESController --> MachineFactory : solicita creación
-MachineFactory --> Machine : crea y retorna
+
+' Herencia Factory
+MachineFactory <|-- CNCFactory
+MachineFactory <|-- RobotFactory
+
+' Producto
+Machine <|.. CNCMachine
+Machine <|.. RobotMachine
+
+' Creación concreta
+CNCFactory ..> CNCMachine : crea
+RobotFactory ..> RobotMachine : crea
+
 @enduml
