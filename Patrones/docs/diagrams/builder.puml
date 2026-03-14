@@ -1,0 +1,32 @@
+@startuml
+class ProductionReport {
+  + order_id : str
+  + production_line : str
+  + shift : str
+  + units_planned : int
+  + units_produced : int
+  + downtime_minutes : int
+  + quality_alerts : list
+  + operator_notes : str
+}
+
+interface ProductionReportBuilder {
+  + reset()
+  + set_header(order_id, production_line, shift)
+  + set_output(units_planned, units_produced, downtime_minutes)
+  + add_quality_alert(alert)
+  + set_operator_notes(notes)
+  + build() : ProductionReport
+}
+
+class StandardProductionReportBuilder
+
+class ReportDirector {
+  + build_standard_shift_report(...)
+  + build_report_with_alerts(...)
+}
+
+ProductionReportBuilder <|.. StandardProductionReportBuilder
+StandardProductionReportBuilder ..> ProductionReport : builds
+ReportDirector --> ProductionReportBuilder : uses
+@enduml
