@@ -1,0 +1,35 @@
+@startuml
+interface Machine {
+  + operate()
+}
+
+interface Robot {
+  + assist()
+}
+
+class CNCMachine
+class ManualMachine
+class IndustrialRobot
+class HumanOperator
+
+Machine <|.. CNCMachine
+Machine <|.. ManualMachine
+Robot <|.. IndustrialRobot
+Robot <|.. HumanOperator
+
+abstract class ProductionLineFactory {
+  + create_machine() : Machine
+  + create_robot() : Robot
+}
+
+class AutomaticLineFactory
+class ManualLineFactory
+
+ProductionLineFactory <|-- AutomaticLineFactory
+ProductionLineFactory <|-- ManualLineFactory
+
+AutomaticLineFactory ..> CNCMachine : creates
+AutomaticLineFactory ..> IndustrialRobot : creates
+ManualLineFactory ..> ManualMachine : creates
+ManualLineFactory ..> HumanOperator : creates
+@enduml

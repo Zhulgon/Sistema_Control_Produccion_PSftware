@@ -1,0 +1,82 @@
+@startuml
+title Proyecto MES - Vista General Patrones (Parcial Semana 6)
+
+class MESController <<Singleton>> {
+  - _instance : MESController
+  + plan_production()
+  + calculate_oee()
+}
+
+interface Machine {
+  + start()
+}
+class CNCMachine
+class RobotMachine
+Machine <|.. CNCMachine
+Machine <|.. RobotMachine
+
+abstract class MachineFactory <<Factory Method>> {
+  + create_machine() : Machine
+}
+class CNCFactory
+class RobotFactory
+MachineFactory <|-- CNCFactory
+MachineFactory <|-- RobotFactory
+CNCFactory ..> CNCMachine : creates
+RobotFactory ..> RobotMachine : creates
+
+interface AFMachine {
+  + operate()
+}
+interface AFRobot {
+  + assist()
+}
+class ManualMachine
+class IndustrialRobot
+class HumanOperator
+AFMachine <|.. CNCMachine
+AFMachine <|.. ManualMachine
+AFRobot <|.. IndustrialRobot
+AFRobot <|.. HumanOperator
+
+abstract class ProductionLineFactory <<Abstract Factory>> {
+  + create_machine() : AFMachine
+  + create_robot() : AFRobot
+}
+class AutomaticLineFactory
+class ManualLineFactory
+ProductionLineFactory <|-- AutomaticLineFactory
+ProductionLineFactory <|-- ManualLineFactory
+AutomaticLineFactory ..> CNCMachine : creates
+AutomaticLineFactory ..> IndustrialRobot : creates
+ManualLineFactory ..> ManualMachine : creates
+ManualLineFactory ..> HumanOperator : creates
+
+class ProductionReport {
+  + order_id : str
+  + production_line : str
+  + shift : str
+  + units_planned : int
+  + units_produced : int
+  + downtime_minutes : int
+  + quality_alerts : list
+  + operator_notes : str
+}
+interface ProductionReportBuilder {
+  + reset()
+  + set_header(...)
+  + set_output(...)
+  + add_quality_alert(...)
+  + set_operator_notes(...)
+  + build() : ProductionReport
+}
+class StandardProductionReportBuilder
+class ReportDirector <<Builder Director>>
+ProductionReportBuilder <|.. StandardProductionReportBuilder
+StandardProductionReportBuilder ..> ProductionReport : builds
+ReportDirector --> ProductionReportBuilder : uses
+
+MESController --> MachineFactory : solicita creacion
+MESController --> ProductionLineFactory : selecciona linea
+MESController --> ReportDirector : solicita reporte
+@enduml

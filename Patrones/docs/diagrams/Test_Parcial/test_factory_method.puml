@@ -1,0 +1,25 @@
+@startuml
+interface Machine {
+  + start()
+}
+
+class CNCMachine
+class RobotMachine
+
+Machine <|.. CNCMachine
+Machine <|.. RobotMachine
+
+abstract class MachineFactory {
+  + create_machine() : Machine
+  + start_machine()
+}
+
+class CNCFactory
+class RobotFactory
+
+MachineFactory <|-- CNCFactory
+MachineFactory <|-- RobotFactory
+
+CNCFactory ..> CNCMachine : creates
+RobotFactory ..> RobotMachine : creates
+@enduml

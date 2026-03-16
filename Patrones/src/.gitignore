@@ -1,5 +1,9 @@
 test_*.py
 !test_builder.py
+!test_singleton.py
+!test_factory_method.py
+!test_abstract_factory.py
+!run_parcial_tests.py
 __pycache__/
 *.pyc
 python

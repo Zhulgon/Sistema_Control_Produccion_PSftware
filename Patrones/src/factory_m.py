@@ -1,5 +1,5 @@
 """
-Factory Method - Creación de máquinas (conceptual)
+Factory Method - Creación de máquinas
 
 Propósito:
 - Desacoplar la creación de equipos industriales.
