@@ -1,0 +1,23 @@
+﻿@startuml
+interface ProductionTrackingService {
+  + report_units(order_id, production_line, units) : str
+}
+
+class LegacyMachineGateway {
+  + send_production_data(legacy_order_ref, legacy_line_code, produced_qty) : str
+}
+
+class LegacyMachineAdapter {
+  - _adaptee : LegacyMachineGateway
+  + report_units(order_id, production_line, units) : str
+}
+
+class MESProductionClient {
+  - _tracking_service : ProductionTrackingService
+  + close_partial_report(order_id, production_line, units) : str
+}
+
+ProductionTrackingService <|.. LegacyMachineAdapter
+LegacyMachineAdapter --> LegacyMachineGateway : adapts
+MESProductionClient --> ProductionTrackingService : uses
+@enduml
