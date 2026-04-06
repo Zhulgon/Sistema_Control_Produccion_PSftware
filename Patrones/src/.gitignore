@@ -4,6 +4,7 @@
 !test_factory_method.py
 !test_abstract_factory.py
 !test_adapter.py
+!test_prototype.py
 !test_PARCIAL.py
 !run_parcial_tests.py
 __pycache__/

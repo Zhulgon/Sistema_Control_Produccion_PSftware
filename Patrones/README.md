@@ -1,15 +1,26 @@
-﻿###
+﻿# Proyecto MES - Patrones de Software
 
-En este repo encontraremos:
-Documentos trabajados por semana o patrón de diseño (.docx, .pdf), llamados actividades.
-Código demostrativo donde se aplica cada patrón al caso MES (#17).
-Diagramas UML como complemento.
-Tests conceptuales por patrón para validar el ejemplo (ej: `test_builder.py`, `test_adapter.py`).
+## Alcance recomendado (leer primero)
 
-TEST PARA EJECUTAR TODOS LOS TEST ASOCIADOS A CADA PATRON (`test_PARCIAL.py`)
+Para entender claramente que hace y que no hace este proyecto:
 
-Realizado en Patrones de Software
-UTS
+- Ver: `docs/00-alcance-proyecto.md`
 
-###
+## Contenido del repositorio
 
+- Documentos por semana o patron (`.docx`, `.pdf`).
+- Codigo Python demostrativo aplicado al caso MES (#17).
+- Diagramas UML de soporte.
+- Tests conceptuales por patron (ejemplo: `test_builder.py`, `test_adapter.py`, `test_prototype.py`).
+
+## Ejecucion de pruebas
+
+Desde `Patrones/src`:
+
+```bash
+python test_PARCIAL.py
+```
+
+## Contexto academico
+
+Trabajo realizado para la asignatura Patrones de Software (UTS).

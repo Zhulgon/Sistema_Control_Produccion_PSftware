@@ -1,0 +1,32 @@
+@startuml
+interface Prototype {
+  + clone() : Prototype
+}
+
+class ProductionOrderTemplate {
+  + template_name : str
+  + machine_profile : dict
+  + quality_checks : list
+  + parameters : dict
+  + order_id : str
+  + planned_units : int
+  + shift : str
+  + clone() : ProductionOrderTemplate
+  + configure_for_order(order_id, planned_units, shift) : ProductionOrderTemplate
+}
+
+class TemplateRegistry {
+  - _templates : dict
+  + register(key, template) : None
+  + create(key) : ProductionOrderTemplate
+}
+
+class MESProductionPlanner {
+  - _registry : TemplateRegistry
+  + prepare_order(template_key, order_id, planned_units, shift) : ProductionOrderTemplate
+}
+
+Prototype <|.. ProductionOrderTemplate
+TemplateRegistry --> ProductionOrderTemplate : stores prototype
+MESProductionPlanner --> TemplateRegistry : requests clone
+@enduml

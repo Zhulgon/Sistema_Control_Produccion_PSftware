@@ -1,8 +1,18 @@
-# Patrones_Software_
-Repo destinado a la materia patrones de software de Ing. Sistemas. //
-Sistema de control de producción mensual.
-//
-Integrantes:
-Juan Sebastian Rubiano Romero /
-Angie Lucero Vargas Amado
+﻿# Patrones_Software
 
+Repositorio de la asignatura Patrones de Software (Ing. de Sistemas).
+
+## Descripcion breve
+
+Caso academico: Sistema de Control de Produccion (MES).
+
+## Integrantes
+
+- Juan Sebastian Rubiano Romero
+- Angie Lucero Vargas Amado
+
+## Alcance del proyecto
+
+Para una descripcion clara del alcance y fuera de alcance:
+
+- `Patrones/docs/00-alcance-proyecto.md`
