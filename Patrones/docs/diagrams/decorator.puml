@@ -1,0 +1,23 @@
+@startuml
+interface ProductionReport {
+  + build(order_id, planned_units, produced_units)
+}
+
+class BaseProductionReport
+ProductionReport <|.. BaseProductionReport
+
+abstract class ReportDecorator {
+  - _wrappee : ProductionReport
+}
+
+ProductionReport <|.. ReportDecorator
+ReportDecorator --> ProductionReport : wraps
+
+class QualityDecorator
+class TraceabilityDecorator
+class OEEDecorator
+
+ReportDecorator <|-- QualityDecorator
+ReportDecorator <|-- TraceabilityDecorator
+ReportDecorator <|-- OEEDecorator
+@enduml

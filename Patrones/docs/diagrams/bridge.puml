@@ -1,0 +1,24 @@
+@startuml
+interface CommunicationChannel {
+  + transmit(production_line, payload)
+}
+
+class OPCUAChannel
+class ModbusChannel
+
+CommunicationChannel <|.. OPCUAChannel
+CommunicationChannel <|.. ModbusChannel
+
+abstract class WorkOrder {
+  - _channel : CommunicationChannel
+  + dispatch(order_id, production_line, units)
+}
+
+class CNCWorkOrder
+class RobotWorkOrder
+
+WorkOrder <|-- CNCWorkOrder
+WorkOrder <|-- RobotWorkOrder
+
+WorkOrder --> CommunicationChannel : bridge
+@enduml
