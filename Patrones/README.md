@@ -1,24 +1,51 @@
 ﻿# Proyecto MES - Patrones de Software
 
-## Estado actual
+## Estado del proyecto
 
-El proyecto evoluciono de una fase conceptual a una fase funcional integrada.
+Este repositorio tiene dos fases:
 
-- Fase previa (conceptual): documentada en `PARCIAL_PATRONES_Documento_General.docx`.
-- Fase actual (funcional): implementada en `src/mes_functional_app.py`.
+- Fase conceptual: analisis y demos por patron.
+- Fase funcional: flujo MES end-to-end implementado y verificable.
 
-## Alcance recomendado (leer primero)
+## Alcance funcional real (fase actual)
 
-Para entender claramente que hace y que no hace este proyecto:
+Se implementa de forma ejecutable:
+- Inicio de orden de produccion.
+- Despacho de orden por protocolo (OPCUA/Modbus).
+- Integracion con gateway legacy.
+- Cierre de orden con reporte final enriquecido.
+- Consolidacion de metricas globales y capacidad de planta.
 
-- Ver: `docs/00-alcance-proyecto.md`
+No se implementa:
+- Integracion fisica con maquinaria real.
+- Base de datos o interfaz web productiva.
 
-## Contenido del repositorio
+## Donde ver cada patron en codigo
 
-- Documentos por semana o patron (`.docx`, `.pdf`).
-- Codigo Python por patron y version funcional integrada del MES.
-- Diagramas UML por patron y UML de flujo funcional.
-- Pruebas conceptuales por patron + prueba funcional end-to-end.
+Ver el mapa claro en:
+- `docs/14-mapa-implementacion-patrones.md`
+
+Integracion principal:
+- `src/mes_functional_app.py`
+
+## Ejecucion recomendada (practica guiada)
+
+Desde `Patrones/src`:
+
+```bash
+python run_practica_guiada.py
+```
+
+## Mini interfaz visual (desktop)
+
+Desde `Patrones/src`:
+
+```bash
+python mini_interfaz_mes.py
+```
+
+Guia:
+- `docs/15-mini-interfaz.md`
 
 ## Ejecucion de pruebas
 
@@ -28,13 +55,7 @@ Desde `Patrones/src`:
 python test_PARCIAL.py
 ```
 
-## Demo funcional
-
-Desde `Patrones/src`:
-
-```bash
-python run_mes_functional_demo.py
-```
+Incluye pruebas conceptuales por patron y prueba funcional integrada (`test_mes_functional.py`).
 
 ## UML funcional
 

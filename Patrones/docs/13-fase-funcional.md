@@ -43,6 +43,8 @@ Salidas:
 - Confirmacion de integracion legacy
 - Reporte final enriquecido
 - Resumen global del controlador MES
+- Bitacora de uso de patrones (`execution_log`)
+- Mapa de implementacion (`implementation_map`)
 
 ## 4. Patrones implementados en el flujo real
 
@@ -78,7 +80,13 @@ python run_mes_functional_demo.py
 - `docs/diagrams/functional-overview.puml`
 - `docs/diagrams/functional-order-sequence.puml`
 
-## 7. Resultado
+## 7. Guia de lectura recomendada
+
+1. Ejecutar `python run_practica_guiada.py` para observar alcance y flujo real.
+2. Revisar `docs/14-mapa-implementacion-patrones.md` para ubicar cada patron.
+3. Abrir `src/mes_functional_app.py` y seguir los bloques `[PATTERN: ...]`.
+
+## 8. Resultado
 
 El proyecto conserva la logica academica original y escala a una implementacion funcional
 coherente, verificable y ejecutable de punta a punta.

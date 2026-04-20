@@ -28,6 +28,20 @@ def run_mes_functional_test():
     assert result_1["final_report"]["traceability_code"] == "LOT-OP-2026-3001"
     assert result_1["final_report"]["oee"] > 0
     assert result_1["pattern_trace"]["singleton"] == "MESController"
+    assert len(result_1["implementation_map"]) == 10
+    used_patterns_1 = {entry["pattern"] for entry in result_1["execution_log"]}
+    assert {
+        "Singleton",
+        "Factory Method",
+        "Abstract Factory",
+        "Builder",
+        "Adapter",
+        "Prototype",
+        "Bridge",
+        "Decorator",
+        "Composite",
+        "Facade",
+    }.issubset(used_patterns_1)
 
     result_2 = app.execute_order(
         OrderExecutionRequest(

@@ -1,0 +1,32 @@
+@startuml
+title Pattern -> Code Implementation Map (MES Functional)
+
+package "Integrator" {
+  class FunctionalMESProject
+}
+
+package "Pattern Modules" {
+  class MESController <<Singleton>>
+  class MachineFactory <<Factory Method>>
+  class ProductionLineFactory <<Abstract Factory>>
+  class ReportDirector <<Builder>>
+  class LegacyMachineAdapter <<Adapter>>
+  class TemplateRegistry <<Prototype>>
+  class MESScheduler <<Bridge>>
+  class MESShiftCloser <<Decorator>>
+  class MESCapacityService <<Composite>>
+  class MESProductionFacade <<Facade>>
+}
+
+FunctionalMESProject --> MESController : src/singleton_m.py
+FunctionalMESProject --> MachineFactory : src/factory_m.py
+FunctionalMESProject --> ProductionLineFactory : src/abstract_factory_m.py
+FunctionalMESProject --> ReportDirector : src/builder_m.py
+FunctionalMESProject --> LegacyMachineAdapter : src/adapter_m.py
+FunctionalMESProject --> TemplateRegistry : src/prototype_m.py
+FunctionalMESProject --> MESScheduler : src/bridge_m.py
+FunctionalMESProject --> MESShiftCloser : src/decorator_m.py
+FunctionalMESProject --> MESCapacityService : src/composite_m.py
+FunctionalMESProject --> MESProductionFacade : src/facade_m.py
+
+@enduml
