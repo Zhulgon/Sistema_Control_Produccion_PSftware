@@ -1,0 +1,28 @@
+@startuml
+interface ProductionNode {
+  + total_planned_units() : int
+  + summary(depth) : string
+}
+
+class MachineStation {
+  - name : string
+  - planned_units : int
+}
+
+class ProductionGroup {
+  - name : string
+  - _children : list<ProductionNode>
+  + add(node)
+  + remove(node)
+}
+
+class MESCapacityService {
+  + calculate_total_units() : int
+  + export_structure() : string
+}
+
+ProductionNode <|.. MachineStation
+ProductionNode <|.. ProductionGroup
+ProductionGroup o-- ProductionNode : children
+MESCapacityService --> ProductionNode : uses
+@enduml

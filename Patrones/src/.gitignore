@@ -7,6 +7,9 @@
 !test_prototype.py
 !test_bridge.py
 !test_decorator.py
+!test_composite.py
+!test_facade.py
+!test_mes_functional.py
 !test_PARCIAL.py
 !run_parcial_tests.py
 __pycache__/

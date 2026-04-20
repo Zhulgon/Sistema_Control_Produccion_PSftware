@@ -1,0 +1,34 @@
+@startuml
+title MES Functional Architecture - Pattern Integration
+
+package "Application Layer" {
+  class FunctionalMESProject
+  class OrderExecutionRequest
+}
+
+package "Core Patterns" {
+  class MESController <<Singleton>>
+  class MachineFactory <<Factory Method>>
+  class ProductionLineFactory <<Abstract Factory>>
+  class ReportDirector <<Builder>>
+  class LegacyMachineAdapter <<Adapter>>
+  class TemplateRegistry <<Prototype>>
+  class MESScheduler <<Bridge>>
+  class MESShiftCloser <<Decorator>>
+  class MESCapacityService <<Composite>>
+  class MESProductionFacade <<Facade>>
+}
+
+FunctionalMESProject --> OrderExecutionRequest : receives
+FunctionalMESProject --> MESController : central state
+FunctionalMESProject --> TemplateRegistry : clone templates
+FunctionalMESProject --> MESProductionFacade : startup flow
+FunctionalMESProject --> ProductionLineFactory : line family
+FunctionalMESProject --> MachineFactory : machine creation
+FunctionalMESProject --> MESScheduler : protocol dispatch
+FunctionalMESProject --> LegacyMachineAdapter : legacy sync
+FunctionalMESProject --> ReportDirector : build report
+FunctionalMESProject --> MESShiftCloser : enrich report
+FunctionalMESProject --> MESCapacityService : plant capacity
+
+@enduml

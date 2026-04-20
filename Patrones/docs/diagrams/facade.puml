@@ -1,0 +1,22 @@
+@startuml
+class OrderValidator
+class InventoryService
+class MachinePreparationService
+class QualityService
+class TrackingService
+
+class MESProductionFacade {
+  + start_order(order_id, production_line, planned_units)
+}
+
+class MESOperatorConsole {
+  + run_startup(order_id, production_line, planned_units)
+}
+
+MESProductionFacade --> OrderValidator
+MESProductionFacade --> InventoryService
+MESProductionFacade --> MachinePreparationService
+MESProductionFacade --> QualityService
+MESProductionFacade --> TrackingService
+MESOperatorConsole --> MESProductionFacade
+@enduml
