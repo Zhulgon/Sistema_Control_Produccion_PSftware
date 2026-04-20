@@ -5,6 +5,10 @@ Ejecucion:
 python test_prototype.py
 """
 
+from _bootstrap import ensure_src_path
+
+ensure_src_path()
+
 from prototype_m import MESProductionPlanner, ProductionOrderTemplate, TemplateRegistry
 
 

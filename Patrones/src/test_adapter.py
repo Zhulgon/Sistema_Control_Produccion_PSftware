@@ -5,6 +5,10 @@ Ejecucion:
 python test_adapter.py
 """
 
+from _bootstrap import ensure_src_path
+
+ensure_src_path()
+
 from adapter_m import LegacyMachineAdapter, LegacyMachineGateway, MESProductionClient
 
 

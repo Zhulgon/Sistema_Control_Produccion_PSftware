@@ -5,6 +5,10 @@ Ejecucion:
 python test_facade.py
 """
 
+from _bootstrap import ensure_src_path
+
+ensure_src_path()
+
 from facade_m import MESOperatorConsole, MESProductionFacade
 
 

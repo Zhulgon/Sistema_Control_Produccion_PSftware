@@ -5,7 +5,11 @@ Ejecución:
 python test_abstract_factory.py
 """
 
-from abstract_factory_production import AutomaticLineFactory, ManualLineFactory
+from _bootstrap import ensure_src_path
+
+ensure_src_path()
+
+from abstract_factory_m import AutomaticLineFactory, ManualLineFactory
 
 
 def run_abstract_factory_test():

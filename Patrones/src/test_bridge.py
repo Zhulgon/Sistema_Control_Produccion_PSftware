@@ -5,6 +5,10 @@ Ejecucion:
 python test_bridge.py
 """
 
+from _bootstrap import ensure_src_path
+
+ensure_src_path()
+
 from bridge_m import CNCWorkOrder, MESScheduler, ModbusChannel, OPCUAChannel, RobotWorkOrder
 
 

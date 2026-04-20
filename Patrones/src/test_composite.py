@@ -5,6 +5,10 @@ Ejecucion:
 python test_composite.py
 """
 
+from _bootstrap import ensure_src_path
+
+ensure_src_path()
+
 from composite_m import MESCapacityService, MachineStation, ProductionGroup
 
 

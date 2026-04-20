@@ -28,6 +28,12 @@ Ver el mapa claro en:
 Integracion principal:
 - `src/mes_functional_app.py`
 
+Estructura de `src`:
+- Modulos reales por patron: `*_m.py`
+- Integrador funcional: `mes_functional_app.py`
+- Entradas de uso: `mini_interfaz_mes.py`, `run_practica_guiada.py`, `run_mes_functional_demo.py`
+- Tests: `src/test/`
+
 ## Ejecucion recomendada (practica guiada)
 
 Desde `Patrones/src`:
@@ -49,7 +55,7 @@ Guia:
 
 ## Ejecucion de pruebas
 
-Desde `Patrones/src`:
+Desde `Patrones/src/test`:
 
 ```bash
 python test_PARCIAL.py

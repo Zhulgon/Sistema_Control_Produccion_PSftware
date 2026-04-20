@@ -5,7 +5,11 @@ Ejecución:
 python test_builder.py
 """
 
-from builder_production_report import ReportDirector, StandardProductionReportBuilder
+from _bootstrap import ensure_src_path
+
+ensure_src_path()
+
+from builder_m import ReportDirector, StandardProductionReportBuilder
 
 
 def run_builder_demo():

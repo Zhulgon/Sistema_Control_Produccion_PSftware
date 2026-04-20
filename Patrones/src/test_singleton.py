@@ -5,7 +5,11 @@ Ejecución:
 python test_singleton.py
 """
 
-from singleton_mes_controller import MESController
+from _bootstrap import ensure_src_path
+
+ensure_src_path()
+
+from singleton_m import MESController
 
 
 def run_singleton_test():

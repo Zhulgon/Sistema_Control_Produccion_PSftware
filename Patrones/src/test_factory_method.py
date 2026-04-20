@@ -5,7 +5,11 @@ Ejecución:
 python test_factory_method.py
 """
 
-from factory_machines import CNCFactory, CNCMachine, RobotFactory, RobotMachine
+from _bootstrap import ensure_src_path
+
+ensure_src_path()
+
+from factory_m import CNCFactory, CNCMachine, RobotFactory, RobotMachine
 
 
 def run_factory_method_test():

@@ -5,6 +5,10 @@ Ejecucion:
 python test_decorator.py
 """
 
+from _bootstrap import ensure_src_path
+
+ensure_src_path()
+
 from decorator_m import (
     BaseProductionReport,
     MESShiftCloser,
