@@ -1,0 +1,39 @@
+@startuml
+interface MESReportService {
+  + generate_oee_report(order_id, production_line, planned_units, produced_units, downtime_minutes) : dict
+}
+
+class UserSession {
+  + username : str
+  + role : str
+  + allowed_lines : tuple
+  + can_read_line(production_line) : bool
+  + can_generate_reports() : bool
+}
+
+class RealMESReportService {
+  + load_message : str
+  + generate_oee_report(order_id, production_line, planned_units, produced_units, downtime_minutes) : dict
+}
+
+class MESReportProxy {
+  - _session : UserSession
+  - _real_service : RealMESReportService
+  - _cache : dict
+  - _audit_log : list
+  + service_loaded() : bool
+  + get_audit_log() : list
+  + generate_oee_report(order_id, production_line, planned_units, produced_units, downtime_minutes) : dict
+}
+
+class MESReportClient {
+  - _report_service : MESReportService
+  + request_shift_oee(order_id, production_line, planned_units, produced_units, downtime_minutes) : dict
+}
+
+MESReportService <|.. RealMESReportService
+MESReportService <|.. MESReportProxy
+MESReportProxy --> UserSession : validates
+MESReportProxy --> RealMESReportService : lazy loading / delegates
+MESReportClient --> MESReportService : uses
+@enduml

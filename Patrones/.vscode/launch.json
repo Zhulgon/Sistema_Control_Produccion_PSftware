@@ -2,10 +2,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "MES: Mini interfaz",
+      "name": "MES: UI proceso completo",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/src/mini_interfaz_mes.py",
+      "program": "${workspaceFolder}/src/Test_UI_2ndo_Corte.py",
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}/src",
       "env": {
@@ -13,21 +13,10 @@
       }
     },
     {
-      "name": "MES: Practica guiada",
+      "name": "MES: UI por patrones",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/src/run_practica_guiada.py",
-      "console": "integratedTerminal",
-      "cwd": "${workspaceFolder}/src",
-      "env": {
-        "PYTHONPATH": "${workspaceFolder}/src"
-      }
-    },
-    {
-      "name": "MES: Demo funcional",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${workspaceFolder}/src/run_mes_functional_demo.py",
+      "program": "${workspaceFolder}/src/ui_patrones_mes.py",
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}/src",
       "env": {
@@ -38,9 +27,9 @@
       "name": "MES: Test parcial",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/src/test/test_PARCIAL.py",
+      "program": "${workspaceFolder}/src/test_PARCIAL.py",
       "console": "integratedTerminal",
-      "cwd": "${workspaceFolder}/src/test",
+      "cwd": "${workspaceFolder}/src",
       "env": {
         "PYTHONPATH": "${workspaceFolder}/src"
       }
@@ -49,9 +38,9 @@
       "name": "MES: Test composite",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/src/test/test_composite.py",
+      "program": "${workspaceFolder}/src/test_composite.py",
       "console": "integratedTerminal",
-      "cwd": "${workspaceFolder}/src/test",
+      "cwd": "${workspaceFolder}/src",
       "env": {
         "PYTHONPATH": "${workspaceFolder}/src"
       }

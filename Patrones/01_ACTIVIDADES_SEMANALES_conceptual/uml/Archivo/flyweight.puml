@@ -1,0 +1,46 @@
+@startuml
+interface MachineProfileFlyweight {
+  + render_event(event_id, order_id, production_line, minute, units) : str
+}
+
+class SharedMachineProfile {
+  + machine_type : str
+  + protocol : str
+  + quality_rule : str
+  + nominal_rate : int
+  + render_event(event_id, order_id, production_line, minute, units) : str
+}
+
+class MachineProfileFactory {
+  - _pool : dict
+  + get_profile(machine_type, protocol, quality_rule, nominal_rate) : SharedMachineProfile
+  + pool_size() : int
+  + pool_keys() : list
+}
+
+class ProductionTelemetryEvent {
+  + profile : MachineProfileFlyweight
+  + event_id : str
+  + order_id : str
+  + production_line : str
+  + minute : int
+  + units : int
+  + summary() : str
+}
+
+class MESTelemetryBoard {
+  - _factory : MachineProfileFactory
+  - _events : list
+  + capture_event(...) : ProductionTelemetryEvent
+  + total_events() : int
+  + shared_profiles() : int
+  + estimated_objects_saved() : int
+  + export_sample(limit) : list
+}
+
+MachineProfileFlyweight <|.. SharedMachineProfile
+MachineProfileFactory --> SharedMachineProfile : creates/reuses
+ProductionTelemetryEvent --> MachineProfileFlyweight : shares intrinsic state
+MESTelemetryBoard --> MachineProfileFactory : requests profiles
+MESTelemetryBoard --> ProductionTelemetryEvent : stores extrinsic state
+@enduml
