@@ -56,6 +56,8 @@ class OrderExecutionRequest:
     planned_units: int
     shift: str
     protocol: str = "opcua"
+    operator_id: str = ""
+    operator_name: str = ""
 
 
 @dataclass
@@ -65,6 +67,18 @@ class PatternImplementation:
     module: str
     key_classes: str
     usage_point: str
+
+
+@dataclass
+class ProductionConsultation:
+    identifier: str
+    title: str
+    objective: str
+    business_question: str
+    suggested_query: str
+    filters: list[str]
+    patterns: list[str]
+    sample_result: dict[str, Any]
 
 
 def pattern_implementation_map() -> list[PatternImplementation]:
@@ -160,6 +174,7 @@ class FunctionalMESProject:
     def __init__(
         self,
         controller: MESController,
+        registry: TemplateRegistry,
         planner: MESProductionPlanner,
         capacity_service: MESCapacityService,
         operator_console: MESOperatorConsole,
@@ -169,6 +184,7 @@ class FunctionalMESProject:
         telemetry_board: MESTelemetryBoard,
     ):
         self._controller = controller
+        self._registry = registry
         self._planner = planner
         self._capacity_service = capacity_service
         self._operator_console = operator_console
@@ -192,6 +208,270 @@ class FunctionalMESProject:
 
     def get_pattern_map(self) -> list[PatternImplementation]:
         return pattern_implementation_map()
+
+    def list_templates(self) -> list[str]:
+        return self._planner.list_templates()
+
+    def get_template_definition(self, key: str) -> dict[str, Any]:
+        template = self._planner.get_template(key)
+        parameters = dict(template.parameters)
+        parameters.pop("line_mode", None)
+        parameters.pop("product_code", None)
+        parameters.pop("product_name", None)
+        return {
+            "template_key": key,
+            "template_name": template.template_name,
+            "machine_type": str(template.machine_profile.get("machine_type", "cnc")).lower(),
+            "line": str(template.machine_profile.get("line", "line-a")).lower(),
+            "program": str(template.machine_profile.get("program", "")),
+            "product_code": str(template.parameters.get("product_code", "")),
+            "product_name": str(template.parameters.get("product_name", "")),
+            "quality_checks": list(template.quality_checks),
+            "line_mode": str(template.parameters.get("line_mode", "automatic")).lower(),
+            "parameters": parameters,
+        }
+
+    def register_template(
+        self,
+        template_key: str,
+        template_name: str,
+        machine_type: str,
+        line: str,
+        program: str,
+        product_code: str,
+        product_name: str,
+        quality_checks: list[str],
+        line_mode: str,
+        parameters: dict[str, Any] | None = None,
+    ) -> None:
+        normalized_key = template_key.strip()
+        normalized_machine_type = machine_type.strip().lower()
+        normalized_line_mode = line_mode.strip().lower()
+        normalized_line = line.strip().lower()
+
+        if not normalized_key:
+            raise ValueError("Template key es obligatorio.")
+        if not template_name.strip():
+            raise ValueError("Template name es obligatorio.")
+        if normalized_machine_type not in self._machine_factories:
+            raise ValueError("Machine type debe ser 'cnc' o 'robot'.")
+        if normalized_line_mode not in self._line_factories:
+            raise ValueError("Line mode debe ser 'automatic' o 'manual'.")
+        if not normalized_line:
+            raise ValueError("Line es obligatoria.")
+        if not product_code.strip():
+            raise ValueError("Product code es obligatorio.")
+        if not product_name.strip():
+            raise ValueError("Product name es obligatorio.")
+
+        template_parameters = dict(parameters or {})
+        template_parameters["line_mode"] = normalized_line_mode
+        template_parameters["product_code"] = product_code.strip()
+        template_parameters["product_name"] = product_name.strip()
+
+        template = ProductionOrderTemplate(
+            template_name=template_name.strip(),
+            machine_profile={
+                "machine_type": normalized_machine_type,
+                "line": normalized_line,
+                "program": program.strip(),
+            },
+            quality_checks=[check for check in quality_checks if check],
+            parameters=template_parameters,
+        )
+        self._planner.register_template(normalized_key, template)
+
+    def generate_production_consultations(
+        self,
+        template_key: str,
+        order_id: str,
+        planned_units: int,
+        shift: str,
+        protocol: str,
+        operator_id: str = "",
+        operator_name: str = "",
+        result: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
+        template = self._planner.get_template(template_key)
+        machine_type = str(template.machine_profile.get("machine_type", "cnc")).lower()
+        production_line = str(template.machine_profile.get("line", "line-a")).upper()
+        line_mode = str(template.parameters.get("line_mode", "automatic")).lower()
+        product_code = str(template.parameters.get("product_code", ""))
+        product_name = str(template.parameters.get("product_name", ""))
+        quality_checks = [str(check) for check in template.quality_checks]
+        produced_units = planned_units
+        downtime_minutes = 0
+        oee_value = "-"
+        telemetry_events = 0
+        telemetry_profiles = 0
+        alerts: list[str] = []
+        if result and result.get("status") == "OK":
+            final_report = result.get("final_report", {})
+            produced_units = int(final_report.get("units_produced", planned_units))
+            downtime_minutes = int(final_report.get("downtime_minutes", 0))
+            oee_value = result.get("secure_oee_report", {}).get("oee", "-")
+            telemetry_summary = result.get("telemetry_summary", {})
+            telemetry_events = int(telemetry_summary.get("total_events", 0))
+            telemetry_profiles = int(telemetry_summary.get("shared_profiles", 0))
+            alerts = list(final_report.get("alerts", []))
+            operator_id = str(final_report.get("operator_id", ""))
+            operator_name = str(final_report.get("operator_name", ""))
+
+        quality_rule = quality_checks[0] if quality_checks else "standard"
+        consultations = [
+            ProductionConsultation(
+                identifier="Q1",
+                title="Consulta de planificación por turno y línea",
+                objective="Visualizar qué orden se planificó, en qué turno y sobre qué línea debe ejecutarse.",
+                business_question="¿Cómo quedó planificada la orden de producción para el turno y la línea seleccionados?",
+                suggested_query=(
+                    "SELECT order_id, template_key, production_line, machine_type, shift, planned_units "
+                    "FROM mes_order_planning "
+                    f"WHERE order_id = '{order_id}' AND shift = '{shift}' AND production_line = '{production_line}';"
+                ),
+                filters=[
+                    f"order_id={order_id}",
+                    f"template_key={template_key}",
+                    f"product_code={product_code}",
+                    f"shift={shift}",
+                    f"production_line={production_line}",
+                ],
+                patterns=["Prototype", "Facade", "Singleton"],
+                sample_result={
+                    "order_id": order_id,
+                    "template_key": template_key,
+                    "product_code": product_code,
+                    "product_name": product_name,
+                    "line": production_line,
+                    "machine_type": machine_type,
+                    "shift": shift,
+                    "planned_units": planned_units,
+                },
+            ),
+            ProductionConsultation(
+                identifier="Q2",
+                title="Consulta de programación y despacho de la orden",
+                objective="Confirmar cómo se programó la orden y por qué canal/protocolo se libera a planta.",
+                business_question="¿Cómo se realiza la programación operativa y el despacho técnico de la orden?",
+                suggested_query=(
+                    "SELECT order_id, production_line, machine_type, line_mode, protocol, programmed_units "
+                    "FROM mes_dispatch_schedule "
+                    f"WHERE order_id = '{order_id}' AND protocol = '{protocol.lower()}';"
+                ),
+                filters=[
+                    f"order_id={order_id}",
+                    f"protocol={protocol.lower()}",
+                    f"machine_type={machine_type}",
+                    f"line_mode={line_mode}",
+                    f"operator_id={operator_id or 'pendiente'}",
+                ],
+                patterns=["Abstract Factory", "Factory Method", "Bridge"],
+                sample_result={
+                    "order_id": order_id,
+                    "production_line": production_line,
+                    "machine_type": machine_type,
+                    "line_mode": line_mode,
+                    "protocol": protocol.lower(),
+                    "operator_id": operator_id,
+                    "operator_name": operator_name,
+                    "programmed_units": planned_units,
+                },
+            ),
+            ProductionConsultation(
+                identifier="Q3",
+                title="Consulta de capacidad disponible vs. carga planificada",
+                objective="Comparar la carga de la orden contra la capacidad total disponible de la planta.",
+                business_question="¿La planta y la línea tienen capacidad suficiente para soportar la orden planificada?",
+                suggested_query=(
+                    "SELECT plant_id, production_line, total_capacity_units, planned_units, "
+                    "(total_capacity_units - planned_units) AS remaining_capacity "
+                    "FROM mes_capacity_snapshot "
+                    f"WHERE production_line = '{production_line}' AND order_id = '{order_id}';"
+                ),
+                filters=[
+                    f"order_id={order_id}",
+                    f"production_line={production_line}",
+                    f"product_code={product_code}",
+                    f"planned_units={planned_units}",
+                ],
+                patterns=["Composite", "Singleton"],
+                sample_result={
+                    "production_line": production_line,
+                    "product_code": product_code,
+                    "product_name": product_name,
+                    "planned_units": planned_units,
+                    "plant_capacity_units": self._capacity_service.calculate_total_units(),
+                    "remaining_capacity_after_order": self._capacity_service.calculate_total_units() - planned_units,
+                },
+            ),
+            ProductionConsultation(
+                identifier="Q4",
+                title="Consulta de ejecución del turno y OEE",
+                objective="Analizar el cumplimiento del turno, la producción real, tiempos de parada y el OEE.",
+                business_question="¿Qué tan bien se ejecutó la orden frente a lo planeado y cuál fue su OEE?",
+                suggested_query=(
+                    "SELECT order_id, shift, planned_units, produced_units, downtime_minutes, oee "
+                    "FROM mes_shift_execution "
+                    f"WHERE order_id = '{order_id}' AND shift = '{shift}';"
+                ),
+                filters=[
+                    f"order_id={order_id}",
+                    f"shift={shift}",
+                    f"operator_id={operator_id or 'pendiente'}",
+                    f"planned_units={planned_units}",
+                ],
+                patterns=["Builder", "Decorator", "Proxy"],
+                sample_result={
+                    "order_id": order_id,
+                    "shift": shift,
+                    "operator_id": operator_id,
+                    "operator_name": operator_name,
+                    "planned_units": planned_units,
+                    "produced_units": produced_units,
+                    "downtime_minutes": downtime_minutes,
+                    "oee": oee_value,
+                },
+            ),
+            ProductionConsultation(
+                identifier="Q5",
+                title="Consulta de telemetría, trazabilidad e incidencias",
+                objective="Revisar eventos de producción, regla de calidad aplicada y alertas de la orden.",
+                business_question="¿Qué eventos e incidencias quedaron registrados durante la ejecución de la orden?",
+                suggested_query=(
+                    "SELECT order_id, production_line, telemetry_events, shared_profiles, quality_rule, alerts "
+                    "FROM mes_telemetry_trace "
+                    f"WHERE order_id = '{order_id}' AND production_line = '{production_line}';"
+                ),
+                filters=[
+                    f"order_id={order_id}",
+                    f"production_line={production_line}",
+                    f"product_code={product_code}",
+                    f"quality_rule={quality_rule}",
+                ],
+                patterns=["Flyweight", "Adapter", "Decorator"],
+                sample_result={
+                    "order_id": order_id,
+                    "production_line": production_line,
+                    "product_code": product_code,
+                    "product_name": product_name,
+                    "telemetry_events": telemetry_events,
+                    "shared_profiles": telemetry_profiles,
+                    "quality_rule": quality_rule,
+                    "alerts": alerts or ["Sin alertas registradas"],
+                },
+            ),
+        ]
+
+        pattern_details = {item.pattern: asdict(item) for item in self.get_pattern_map()}
+        return [
+            {
+                **asdict(consultation),
+                "pattern_details": [
+                    pattern_details[name] for name in consultation.patterns if name in pattern_details
+                ],
+            }
+            for consultation in consultations
+        ]
 
     def _build_dispatcher(self, machine_type: str, protocol: str) -> MESScheduler:
         protocol_key = protocol.lower()
@@ -229,6 +509,8 @@ class FunctionalMESProject:
         machine_type = str(base_order.machine_profile.get("machine_type", "cnc")).lower()
         production_line = str(base_order.machine_profile.get("line", "line-a")).upper()
         line_mode = str(base_order.parameters.get("line_mode", "automatic")).lower()
+        product_code = str(base_order.parameters.get("product_code", ""))
+        product_name = str(base_order.parameters.get("product_name", ""))
 
         # [PATTERN: FACADE] Inicio simplificado de orden.
         startup_result = self._operator_console.run_startup(
@@ -385,6 +667,8 @@ class FunctionalMESProject:
             alerts.append("Tiempo de parada registrado")
 
         report_notes = (
+            f"operator={request.operator_id or 'N/A'}-{request.operator_name or 'N/A'}; "
+            f"product={product_code}-{product_name}; "
             f"{startup_machine}; line={line_machine.operate()}; assistant={line_assistant.assist()}"
         )
 
@@ -465,6 +749,10 @@ class FunctionalMESProject:
             **asdict(report),
             **decorated_report,
             "template_name": base_order.template_name,
+            "product_code": product_code,
+            "product_name": product_name,
+            "operator_id": request.operator_id,
+            "operator_name": request.operator_name,
             "secure_oee_report": secure_oee_report,
             "proxy_cached_source": cached_oee_report.get("source"),
             "telemetry_sample": telemetry_sample,
@@ -490,6 +778,14 @@ class FunctionalMESProject:
             "startup": startup_result,
             "dispatch": dispatch_result,
             "legacy_sync": legacy_sync,
+            "operator": {
+                "operator_id": request.operator_id,
+                "operator_name": request.operator_name,
+            },
+            "product": {
+                "product_code": product_code,
+                "product_name": product_name,
+            },
             "final_report": final_report,
             "controller_summary": self._controller.summary(),
             "plant_capacity_units": plant_capacity,
@@ -535,7 +831,12 @@ def build_default_mes_project() -> FunctionalMESProject:
                 "program": "P-ALU-01",
             },
             quality_checks=["dimension_check", "surface_check"],
-            parameters={"speed_rpm": 1800, "line_mode": "automatic"},
+            parameters={
+                "speed_rpm": 1800,
+                "line_mode": "automatic",
+                "product_code": "PRD-CNC-ALU-01",
+                "product_name": "Pieza aluminio mecanizada",
+            },
         ),
     )
     registry.register(
@@ -548,7 +849,12 @@ def build_default_mes_project() -> FunctionalMESProject:
                 "program": "R-PACK-03",
             },
             quality_checks=["seal_check", "label_check"],
-            parameters={"grip_force": 45, "line_mode": "manual"},
+            parameters={
+                "grip_force": 45,
+                "line_mode": "manual",
+                "product_code": "PRD-ROB-PACK-03",
+                "product_name": "Kit empacado robotizado",
+            },
         ),
     )
 
@@ -587,6 +893,7 @@ def build_default_mes_project() -> FunctionalMESProject:
 
     return FunctionalMESProject(
         controller=controller,
+        registry=registry,
         planner=planner,
         capacity_service=capacity_service,
         operator_console=operator_console,
@@ -606,6 +913,8 @@ def run_demo() -> dict[str, Any]:
             planned_units=600,
             shift="DAY",
             protocol="opcua",
+            operator_id="USR-001",
+            operator_name="Operador Demo",
         )
     )
 

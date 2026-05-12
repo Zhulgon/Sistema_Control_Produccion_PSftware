@@ -75,6 +75,14 @@ class TemplateRegistry:
             raise KeyError(f"Template '{key}' no registrado.")
         return self._templates[key].clone()
 
+    def get(self, key: str) -> ProductionOrderTemplate:
+        if key not in self._templates:
+            raise KeyError(f"Template '{key}' no registrado.")
+        return self._templates[key].clone()
+
+    def keys(self) -> list[str]:
+        return sorted(self._templates.keys())
+
 
 class MESProductionPlanner:
 
@@ -90,6 +98,15 @@ class MESProductionPlanner:
     ) -> ProductionOrderTemplate:
         base = self._registry.create(template_key)
         return base.configure_for_order(order_id, planned_units, shift)
+
+    def register_template(self, key: str, template: ProductionOrderTemplate) -> None:
+        self._registry.register(key, template)
+
+    def list_templates(self) -> list[str]:
+        return self._registry.keys()
+
+    def get_template(self, key: str) -> ProductionOrderTemplate:
+        return self._registry.get(key)
 
 
 def run_demo() -> dict:
