@@ -291,6 +291,7 @@ class FunctionalMESProject:
         operator_id: str = "",
         operator_name: str = "",
         result: dict[str, Any] | None = None,
+        consultation_count: int | None = None,
     ) -> list[dict[str, Any]]:
         template = self._planner.get_template(template_key)
         machine_type = str(template.machine_profile.get("machine_type", "cnc")).lower()
@@ -463,7 +464,7 @@ class FunctionalMESProject:
         ]
 
         pattern_details = {item.pattern: asdict(item) for item in self.get_pattern_map()}
-        return [
+        consultation_payload = [
             {
                 **asdict(consultation),
                 "pattern_details": [
@@ -472,6 +473,13 @@ class FunctionalMESProject:
             }
             for consultation in consultations
         ]
+        if consultation_count is None:
+            return consultation_payload
+
+        if consultation_count <= 0:
+            raise ValueError("El numero de consultas debe ser mayor que cero.")
+
+        return consultation_payload[: min(consultation_count, len(consultation_payload))]
 
     def _build_dispatcher(self, machine_type: str, protocol: str) -> MESScheduler:
         protocol_key = protocol.lower()
