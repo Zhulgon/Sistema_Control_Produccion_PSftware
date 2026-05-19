@@ -19,3 +19,6 @@ python
 *.temp
 *.tmp
 *.db
+~$*.docx
+consultas_mes*.docx
+render_informe_*/
