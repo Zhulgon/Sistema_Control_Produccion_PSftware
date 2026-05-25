@@ -15,18 +15,15 @@ from mes_functional_app import (
 from patrones_funcionales.proxy_funcional import MESReportClient, MESReportProxy, UserSession
 from software_mes_behavioral import (
     AuditRepositoryObserver,
+    ConsultationStrategyCatalog,
+    ExecuteOrderCommand,
+    GenerateConsultationsCommand,
+    MESCommandInvoker,
     NotificationObserver,
     OrderLifecycleContext,
 )
 from software_mes_persistence import SQLiteMESDatabase
-from software_mes_queries import (
-    QueryFilters,
-    build_capacity_query,
-    build_dispatch_query,
-    build_execution_query,
-    build_planning_query,
-    build_traceability_query,
-)
+from software_mes_queries import QueryFilters
 from software_mes_security import AuthenticatedUser, AuthenticationService
 
 
@@ -47,6 +44,20 @@ def software_pattern_implementation_map() -> list[PatternImplementation]:
             key_classes="OrderEventSubject, AuditRepositoryObserver, NotificationObserver",
             usage_point="execute_order(): attach()/notify() durante las transiciones",
         ),
+        PatternImplementation(
+            pattern="Strategy",
+            objective="Construir consultas persistentes con variantes intercambiables por tipo analitico.",
+            module="src/software_mes_behavioral.py",
+            key_classes="ConsultationStrategy, PlanningConsultationStrategy, DispatchConsultationStrategy, CapacityConsultationStrategy, ExecutionConsultationStrategy, TraceabilityConsultationStrategy",
+            usage_point="generate_filtered_consultations(): strategy_catalog.build_all()",
+        ),
+        PatternImplementation(
+            pattern="Command",
+            objective="Encapsular operaciones principales del sistema para ejecutarlas de forma uniforme.",
+            module="src/software_mes_behavioral.py",
+            key_classes="MESCommandInvoker, ExecuteOrderCommand, GenerateConsultationsCommand",
+            usage_point="execute_order()/generate_filtered_consultations(): command_invoker.run(command)",
+        ),
     ]
     return base_patterns + behavioral_patterns
 
@@ -57,6 +68,8 @@ class ScalableMESProject:
         self._database = SQLiteMESDatabase(target_path)
         self._auth = AuthenticationService(self._database)
         self._project = build_default_mes_project()
+        self._consultation_strategy_catalog = ConsultationStrategyCatalog()
+        self._command_invoker = MESCommandInvoker()
         self._bootstrap_default_users()
 
     @property
@@ -292,7 +305,7 @@ class ScalableMESProject:
             )
         self._database.save_telemetry_events(rows)
 
-    def execute_order(self, user: AuthenticatedUser, request: OrderExecutionRequest) -> dict[str, Any]:
+    def _execute_order_workflow(self, user: AuthenticatedUser, request: OrderExecutionRequest) -> dict[str, Any]:
         if not user.can_manage_orders():
             raise PermissionError("El usuario autenticado no puede gestionar ordenes.")
 
@@ -391,6 +404,12 @@ class ScalableMESProject:
         result["implementation_map"] = [asdict(item) for item in software_pattern_implementation_map()]
         return result
 
+    def execute_order(self, user: AuthenticatedUser, request: OrderExecutionRequest) -> dict[str, Any]:
+        command = ExecuteOrderCommand(self._execute_order_workflow, user, request)
+        result = self._command_invoker.run(command)
+        result["command_history"] = self._command_invoker.history()
+        return result
+
     def _store_consultation_batch(
         self,
         user: AuthenticatedUser,
@@ -469,7 +488,31 @@ class ScalableMESProject:
             "sample_result": rows[:3],
         }
 
-    def generate_filtered_consultations(
+    def _consultation_metadata_map(self) -> dict[str, dict[str, str]]:
+        return {
+            "SQ1": {
+                "objective": "Consultar ordenes planificadas filtrando por fecha, hora, turno, linea y producto.",
+                "business_question": "¿Que ordenes quedaron planificadas en un rango de tiempo y bajo que contexto operativo?",
+            },
+            "SQ2": {
+                "objective": "Verificar como se despacharon las ordenes y que protocolo industrial se utilizo.",
+                "business_question": "¿Que despachos se realizaron en la linea y con que protocolo quedaron registrados?",
+            },
+            "SQ3": {
+                "objective": "Comparar la carga planificada contra la capacidad total disponible de la planta.",
+                "business_question": "¿La orden consultada comprometio la capacidad disponible de la planta o de la linea?",
+            },
+            "SQ4": {
+                "objective": "Revisar produccion real, tiempos de parada, OEE y estado final de la orden.",
+                "business_question": "¿Como termino la ejecucion de la orden en terminos de cumplimiento y eficiencia?",
+            },
+            "SQ5": {
+                "objective": "Analizar la trazabilidad de eventos, cambios de estado y auditoria de seguridad.",
+                "business_question": "¿Que evidencia de telemetria, historial y seguridad quedo almacenada por orden?",
+            },
+        }
+
+    def _generate_filtered_consultations_workflow(
         self,
         user: AuthenticatedUser,
         filters: QueryFilters | dict[str, Any],
@@ -481,82 +524,109 @@ class ScalableMESProject:
         if not normalized_filters.requested_by and user.role != "admin":
             normalized_filters.requested_by = user.username
 
-        planning_query, planning_params = build_planning_query(normalized_filters)
-        dispatch_query, dispatch_params = build_dispatch_query(normalized_filters)
-        capacity_query, capacity_params = build_capacity_query(
+        definitions = self._consultation_strategy_catalog.build_all(
+            self._database,
             normalized_filters,
             self._project._capacity_service.calculate_total_units(),
         )
-        execution_query, execution_params = build_execution_query(normalized_filters)
-        trace_query, trace_params = build_traceability_query(normalized_filters)
-
-        planning_rows = self._database.fetchall(planning_query, planning_params)
-        dispatch_rows = self._database.fetchall(dispatch_query, dispatch_params)
-        capacity_rows = self._database.fetchall(capacity_query, capacity_params)
-        execution_rows = self._database.fetchall(execution_query, execution_params)
-        trace_rows = self._database.fetchall(trace_query, trace_params)
-
         consultations = [
             self._consultation_payload(
-                identifier="SQ1",
-                title="Consulta persistente de planificacion",
-                objective="Consultar ordenes planificadas filtrando por fecha, hora, turno, linea y producto.",
-                business_question="¿Que ordenes quedaron planificadas en un rango de tiempo y bajo que contexto operativo?",
-                query=planning_query,
-                params=planning_params,
+                identifier=definition.identifier,
+                title=definition.title,
+                objective=definition.objective,
+                business_question=definition.business_question,
+                query=definition.query,
+                params=definition.params,
                 filters=normalized_filters,
-                patterns=["Prototype", "Facade", "Singleton", "State"],
-                rows=planning_rows,
-            ),
-            self._consultation_payload(
-                identifier="SQ2",
-                title="Consulta de despacho tecnico y protocolo",
-                objective="Verificar como se despacharon las ordenes y que protocolo industrial se utilizo.",
-                business_question="¿Que despachos se realizaron en la linea y con que protocolo quedaron registrados?",
-                query=dispatch_query,
-                params=dispatch_params,
-                filters=normalized_filters,
-                patterns=["Abstract Factory", "Factory Method", "Bridge", "Observer"],
-                rows=dispatch_rows,
-            ),
-            self._consultation_payload(
-                identifier="SQ3",
-                title="Consulta de capacidad frente a la carga",
-                objective="Comparar la carga planificada contra la capacidad total disponible de la planta.",
-                business_question="¿La orden consultada comprometio la capacidad disponible de la planta o de la linea?",
-                query=capacity_query,
-                params=capacity_params,
-                filters=normalized_filters,
-                patterns=["Composite", "Builder", "Singleton"],
-                rows=capacity_rows,
-            ),
-            self._consultation_payload(
-                identifier="SQ4",
-                title="Consulta de ejecucion, OEE y cierre",
-                objective="Revisar produccion real, tiempos de parada, OEE y estado final de la orden.",
-                business_question="¿Como termino la ejecucion de la orden en terminos de cumplimiento y eficiencia?",
-                query=execution_query,
-                params=execution_params,
-                filters=normalized_filters,
-                patterns=["Builder", "Decorator", "Proxy", "State"],
-                rows=execution_rows,
-            ),
-            self._consultation_payload(
-                identifier="SQ5",
-                title="Consulta de trazabilidad y telemetria",
-                objective="Analizar la trazabilidad de eventos, cambios de estado y auditoria de seguridad.",
-                business_question="¿Que evidencia de telemetria, historial y seguridad quedo almacenada por orden?",
-                query=trace_query,
-                params=trace_params,
-                filters=normalized_filters,
-                patterns=["Flyweight", "Adapter", "Observer", "State"],
-                rows=trace_rows,
-            ),
+                patterns=definition.patterns,
+                rows=definition.rows,
+            )
+            for definition in definitions
         ]
         batch_info = self._store_consultation_batch(user, normalized_filters, consultations)
         for item in consultations:
             item["batch_code"] = batch_info["batch_code"]
             item["generated_at"] = batch_info["created_at"]
+            item["generated_by_command"] = "GENERATE_CONSULTATIONS"
+        return consultations
+
+    def generate_filtered_consultations(
+        self,
+        user: AuthenticatedUser,
+        filters: QueryFilters | dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        command = GenerateConsultationsCommand(self._generate_filtered_consultations_workflow, user, filters)
+        return self._command_invoker.run(command)
+
+    def load_persisted_consultations(
+        self,
+        user: AuthenticatedUser,
+        limit: int = 25,
+    ) -> list[dict[str, Any]]:
+        params: list[Any] = []
+        where_clause = ""
+        if user.role != "admin":
+            where_clause = "WHERE cb.username = ?"
+            params.append(user.username)
+
+        rows = self._database.fetchall(
+            f"""
+            SELECT
+                cr.consultation_identifier,
+                cr.title,
+                cr.suggested_query,
+                cr.query_params_json,
+                cr.filters_json,
+                cr.patterns_json,
+                cr.row_count,
+                cr.sample_result_json,
+                cr.created_at,
+                cb.batch_code,
+                cb.username,
+                cb.filters_json AS batch_filters_json
+            FROM consultation_results cr
+            INNER JOIN consultation_batches cb ON cb.batch_code = cr.batch_code
+            {where_clause}
+            ORDER BY datetime(cr.created_at) DESC, cr.batch_code DESC, cr.consultation_identifier ASC
+            LIMIT ?
+            """,
+            tuple(params + [limit]),
+        )
+
+        metadata_map = self._consultation_metadata_map()
+        pattern_details = {
+            item.pattern: asdict(item)
+            for item in software_pattern_implementation_map()
+        }
+        consultations: list[dict[str, Any]] = []
+        for row in rows:
+            metadata = metadata_map.get(
+                row["consultation_identifier"],
+                {
+                    "objective": "Consulta persistente recuperada desde la base de datos.",
+                    "business_question": "¿Que informacion quedo almacenada en la ejecucion historica?",
+                },
+            )
+            patterns = json.loads(row["patterns_json"])
+            consultations.append(
+                {
+                    "identifier": row["consultation_identifier"],
+                    "title": row["title"],
+                    "objective": metadata["objective"],
+                    "business_question": metadata["business_question"],
+                    "suggested_query": row["suggested_query"],
+                    "query_params": json.loads(row["query_params_json"]),
+                    "filters": json.loads(row["filters_json"]),
+                    "patterns": patterns,
+                    "pattern_details": [pattern_details[name] for name in patterns if name in pattern_details],
+                    "row_count": int(row["row_count"]),
+                    "sample_result": json.loads(row["sample_result_json"]),
+                    "batch_code": row["batch_code"],
+                    "generated_at": row["created_at"],
+                    "generated_by": row["username"],
+                    "persisted_filters": json.loads(row["batch_filters_json"]),
+                }
+            )
         return consultations
 
 

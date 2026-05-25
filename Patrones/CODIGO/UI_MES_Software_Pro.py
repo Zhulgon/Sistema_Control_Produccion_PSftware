@@ -427,6 +427,9 @@ class MESSoftwareControlCenter(tk.Tk):
         ttk.Button(action_row, text="Exportar documento", style="Warn.TButton", command=self._export_consultations_doc).pack(
             side=tk.RIGHT, padx=(0, 8)
         )
+        ttk.Button(action_row, text="Cargar historial", style="Ghost.TButton", command=self._load_persisted_consultation_history).pack(
+            side=tk.RIGHT, padx=(0, 8)
+        )
         ttk.Button(action_row, text="Generar consultas", style="Accent.TButton", command=self._generate_consultations).pack(
             side=tk.RIGHT, padx=(0, 8)
         )
@@ -566,6 +569,7 @@ class MESSoftwareControlCenter(tk.Tk):
             return
         self._sync_templates()
         self._refresh_dashboard()
+        self._load_persisted_consultation_history()
         self._render_patterns()
 
     def _refresh_dashboard(self) -> None:
@@ -855,6 +859,29 @@ class MESSoftwareControlCenter(tk.Tk):
             self.status_var.set("No fue posible generar las consultas.")
             return
 
+        self._populate_consultation_tree()
+        self.status_var.set("Consultas filtradas generadas desde la base de datos persistente.")
+        self.notebook.select(self.consultation_tab)
+
+    def _load_persisted_consultation_history(self) -> None:
+        if not self.current_user:
+            return
+
+        try:
+            limit = int(self.filter_limit_var.get().strip() or "25")
+        except ValueError:
+            limit = 25
+
+        try:
+            self.current_consultations = self.service.load_persisted_consultations(self.current_user, limit=max(limit, 5))
+        except Exception as exc:
+            messagebox.showerror("MES Software", str(exc))
+            self.status_var.set("No fue posible recargar el historial persistido.")
+            return
+
+        self._populate_consultation_tree()
+
+    def _populate_consultation_tree(self) -> None:
         rows = []
         for item in self.current_consultations:
             rows.append(
@@ -870,8 +897,11 @@ class MESSoftwareControlCenter(tk.Tk):
             first = self.consultation_tree.get_children()[0]
             self.consultation_tree.selection_set(first)
             self._render_selected_consultation()
-        self.status_var.set("Consultas filtradas generadas desde la base de datos persistente.")
-        self.notebook.select(self.consultation_tab)
+        else:
+            self._clear_text(
+                self.consultation_detail_text,
+                "No hay consultas persistidas para el usuario actual en la base de datos activa.",
+            )
 
     def _render_selected_consultation(self) -> None:
         selection = self.consultation_tree.selection()
@@ -879,7 +909,14 @@ class MESSoftwareControlCenter(tk.Tk):
             return
         item = self.consultation_tree.item(selection[0], "values")
         consultation_id = item[0]
-        consultation = next((row for row in self.current_consultations if row["identifier"] == consultation_id), None)
+        batch_code = item[3] if len(item) > 3 else ""
+        consultation = next(
+            (
+                row for row in self.current_consultations
+                if row["identifier"] == consultation_id and row.get("batch_code", "") == batch_code
+            ),
+            None,
+        )
         if not consultation:
             return
 
@@ -888,6 +925,7 @@ class MESSoftwareControlCenter(tk.Tk):
             "",
             f"Lote: {consultation.get('batch_code', '-')}",
             f"Generada: {consultation.get('generated_at', '-')}",
+            f"Usuario: {consultation.get('generated_by', self.current_user.username if self.current_user else '-')}",
             f"Objetivo: {consultation['objective']}",
             f"Pregunta: {consultation['business_question']}",
             f"Filas encontradas: {consultation['row_count']}",
