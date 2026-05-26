@@ -46,22 +46,32 @@ def main() -> None:
         limit=10,
     )
     consultations = app.generate_filtered_consultations(admin, filters)
-    assert len(consultations) == 5
+    assert len(consultations) == 10
     assert consultations[0]["row_count"] >= 1
     assert consultations[3]["row_count"] >= 1
     assert consultations[4]["row_count"] >= 1
+    assert consultations[5]["row_count"] >= 1
+    assert consultations[6]["row_count"] >= 1
+    assert consultations[7]["row_count"] >= 1
+    assert consultations[8]["row_count"] >= 1
+    assert consultations[9]["row_count"] >= 1
     assert all(item.get("batch_code") for item in consultations)
     assert all(item.get("generated_at") for item in consultations)
     assert all("Strategy" in item.get("patterns", []) for item in consultations)
+    sq9 = next(item for item in consultations if item["identifier"] == "SQ9")
+    assert sq9["sample_result"]
+    assert {"product_code", "product_name", "fulfillment_rate"}.issubset(sq9["sample_result"][0].keys())
 
     snapshot = app.dashboard_snapshot(admin)
     assert snapshot["total_orders"] >= 1
     assert snapshot["total_consultation_batches"] >= 1
     assert snapshot["recent_consultation_batches"]
 
-    persisted = app.load_persisted_consultations(admin, limit=10)
-    assert len(persisted) == 5
-    assert {item["identifier"] for item in persisted} == {"SQ1", "SQ2", "SQ3", "SQ4", "SQ5"}
+    persisted = app.load_persisted_consultations(admin, limit=20)
+    assert len(persisted) == 10
+    assert {item["identifier"] for item in persisted} == {
+        "SQ1", "SQ2", "SQ3", "SQ4", "SQ5", "SQ6", "SQ7", "SQ8", "SQ9", "SQ10"
+    }
     assert all(item.get("batch_code") for item in persisted)
 
     pattern_names = {item["pattern"] for item in app.pattern_map()}

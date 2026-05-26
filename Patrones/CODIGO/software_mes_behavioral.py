@@ -7,11 +7,16 @@ from typing import Any, Callable
 
 from software_mes_persistence import SQLiteMESDatabase
 from software_mes_queries import (
+    build_audit_activity_query,
     QueryFilters,
     build_capacity_query,
     build_dispatch_query,
     build_execution_query,
+    build_line_load_query,
+    build_operator_productivity_query,
     build_planning_query,
+    build_product_performance_query,
+    build_shift_performance_query,
     build_traceability_query,
 )
 
@@ -201,9 +206,9 @@ class ConsultationStrategy(ABC):
 
 class PlanningConsultationStrategy(ConsultationStrategy):
     identifier = "SQ1"
-    title = "Consulta persistente de planificacion"
-    objective = "Consultar ordenes planificadas filtrando por fecha, hora, turno, linea y producto."
-    business_question = "¿Que ordenes quedaron planificadas en un rango de tiempo y bajo que contexto operativo?"
+    title = "Demanda confirmada por orden y contexto"
+    objective = "Visualizar la demanda operativa registrada por orden, linea, turno y producto para respaldar la planificacion comercial."
+    business_question = "Que ordenes y productos concentraron la demanda confirmada en el periodo consultado?"
     patterns = ["Prototype", "Facade", "Singleton", "State", "Strategy"]
 
     def build(
@@ -227,9 +232,9 @@ class PlanningConsultationStrategy(ConsultationStrategy):
 
 class DispatchConsultationStrategy(ConsultationStrategy):
     identifier = "SQ2"
-    title = "Consulta de despacho tecnico y protocolo"
-    objective = "Verificar como se despacharon las ordenes y que protocolo industrial se utilizo."
-    business_question = "¿Que despachos se realizaron en la linea y con que protocolo quedaron registrados?"
+    title = "Integracion operativa por protocolo"
+    objective = "Evidenciar como las ordenes se despacharon y que protocolos industriales soporta el sistema en la operacion real."
+    business_question = "Que lineas, maquinas y protocolos se utilizaron para integrar la ejecucion de las ordenes?"
     patterns = ["Abstract Factory", "Factory Method", "Bridge", "Observer", "Strategy"]
 
     def build(
@@ -253,9 +258,9 @@ class DispatchConsultationStrategy(ConsultationStrategy):
 
 class CapacityConsultationStrategy(ConsultationStrategy):
     identifier = "SQ3"
-    title = "Consulta de capacidad frente a la carga"
-    objective = "Comparar la carga planificada contra la capacidad total disponible de la planta."
-    business_question = "¿La orden consultada comprometio la capacidad disponible de la planta o de la linea?"
+    title = "Capacidad disponible vs carga comprometida"
+    objective = "Comparar unidades comprometidas contra capacidad disponible para justificar decisiones de balanceo o expansion."
+    business_question = "La demanda registrada presiona la capacidad disponible de la planta o de una linea especifica?"
     patterns = ["Composite", "Builder", "Singleton", "Strategy"]
 
     def build(
@@ -279,9 +284,9 @@ class CapacityConsultationStrategy(ConsultationStrategy):
 
 class ExecutionConsultationStrategy(ConsultationStrategy):
     identifier = "SQ4"
-    title = "Consulta de ejecucion, OEE y cierre"
-    objective = "Revisar produccion real, tiempos de parada, OEE y estado final de la orden."
-    business_question = "¿Como termino la ejecucion de la orden en terminos de cumplimiento y eficiencia?"
+    title = "Cumplimiento de produccion y OEE"
+    objective = "Medir cumplimiento del plan, tiempos de parada y eficiencia real de la ejecucion."
+    business_question = "Que tan bien se cumplio el plan de produccion y con que nivel de eficiencia opero cada orden?"
     patterns = ["Builder", "Decorator", "Proxy", "State", "Strategy"]
 
     def build(
@@ -305,9 +310,9 @@ class ExecutionConsultationStrategy(ConsultationStrategy):
 
 class TraceabilityConsultationStrategy(ConsultationStrategy):
     identifier = "SQ5"
-    title = "Consulta de trazabilidad y telemetria"
-    objective = "Analizar la trazabilidad de eventos, cambios de estado y auditoria de seguridad."
-    business_question = "¿Que evidencia de telemetria, historial y seguridad quedo almacenada por orden?"
+    title = "Trazabilidad y evidencia de cumplimiento"
+    objective = "Consolidar eventos, historial y auditoria para demostrar trazabilidad y cumplimiento operativo."
+    business_question = "Que evidencia deja el sistema para rastrear una orden de punta a punta?"
     patterns = ["Flyweight", "Adapter", "Observer", "State", "Strategy"]
 
     def build(
@@ -329,6 +334,136 @@ class TraceabilityConsultationStrategy(ConsultationStrategy):
         )
 
 
+class OperatorProductivityConsultationStrategy(ConsultationStrategy):
+    identifier = "SQ6"
+    title = "Consulta de productividad por operador"
+    objective = "Comparar aporte operativo por operador segun ordenes cerradas, volumen producido y eficiencia."
+    business_question = "Que operadores entregan mejor productividad y donde hay oportunidad de mejora?"
+    patterns = ["Builder", "Decorator", "Observer", "Strategy"]
+
+    def build(
+        self,
+        database: SQLiteMESDatabase,
+        filters: QueryFilters,
+        plant_capacity_units: int,
+    ) -> ConsultationDefinition:
+        query, params = build_operator_productivity_query(filters)
+        return ConsultationDefinition(
+            identifier=self.identifier,
+            title=self.title,
+            objective=self.objective,
+            business_question=self.business_question,
+            query=query,
+            params=params,
+            patterns=list(self.patterns),
+            rows=database.fetchall(query, params),
+        )
+
+
+class LineLoadConsultationStrategy(ConsultationStrategy):
+    identifier = "SQ7"
+    title = "Carga y utilizacion por linea"
+    objective = "Mostrar como se distribuye la demanda entre lineas para balancear carga y priorizar recursos."
+    business_question = "Que lineas concentran mas trabajo y como se esta utilizando la capacidad instalada?"
+    patterns = ["Composite", "Facade", "Strategy"]
+
+    def build(
+        self,
+        database: SQLiteMESDatabase,
+        filters: QueryFilters,
+        plant_capacity_units: int,
+    ) -> ConsultationDefinition:
+        query, params = build_line_load_query(filters)
+        return ConsultationDefinition(
+            identifier=self.identifier,
+            title=self.title,
+            objective=self.objective,
+            business_question=self.business_question,
+            query=query,
+            params=params,
+            patterns=list(self.patterns),
+            rows=database.fetchall(query, params),
+        )
+
+
+class AuditActivityConsultationStrategy(ConsultationStrategy):
+    identifier = "SQ8"
+    title = "Seguridad operativa y auditoria"
+    objective = "Rastrear accesos y acciones relevantes para reforzar confianza, control y gobierno operativo."
+    business_question = "Que usuarios, ordenes o lineas presentan actividad auditada relevante en el periodo?"
+    patterns = ["Proxy", "Observer", "Command", "Strategy"]
+
+    def build(
+        self,
+        database: SQLiteMESDatabase,
+        filters: QueryFilters,
+        plant_capacity_units: int,
+    ) -> ConsultationDefinition:
+        query, params = build_audit_activity_query(filters)
+        return ConsultationDefinition(
+            identifier=self.identifier,
+            title=self.title,
+            objective=self.objective,
+            business_question=self.business_question,
+            query=query,
+            params=params,
+            patterns=list(self.patterns),
+            rows=database.fetchall(query, params),
+        )
+
+
+class ProductPerformanceConsultationStrategy(ConsultationStrategy):
+    identifier = "SQ9"
+    title = "Desempeno por producto"
+    objective = "Comparar volumen, cumplimiento y eficiencia por producto para priorizar el portafolio operativo."
+    business_question = "Que productos mueven mas volumen y cuales presentan peor eficiencia o mayor desviacion?"
+    patterns = ["Builder", "Decorator", "Strategy"]
+
+    def build(
+        self,
+        database: SQLiteMESDatabase,
+        filters: QueryFilters,
+        plant_capacity_units: int,
+    ) -> ConsultationDefinition:
+        query, params = build_product_performance_query(filters)
+        return ConsultationDefinition(
+            identifier=self.identifier,
+            title=self.title,
+            objective=self.objective,
+            business_question=self.business_question,
+            query=query,
+            params=params,
+            patterns=list(self.patterns),
+            rows=database.fetchall(query, params),
+        )
+
+
+class ShiftPerformanceConsultationStrategy(ConsultationStrategy):
+    identifier = "SQ10"
+    title = "Comparativo de desempeno por turno"
+    objective = "Comparar rendimiento entre turnos usando volumen producido, paradas y eficiencia promedio."
+    business_question = "Que diferencias operativas hay entre DAY y NIGHT y donde conviene intervenir?"
+    patterns = ["State", "Decorator", "Strategy"]
+
+    def build(
+        self,
+        database: SQLiteMESDatabase,
+        filters: QueryFilters,
+        plant_capacity_units: int,
+    ) -> ConsultationDefinition:
+        query, params = build_shift_performance_query(filters)
+        return ConsultationDefinition(
+            identifier=self.identifier,
+            title=self.title,
+            objective=self.objective,
+            business_question=self.business_question,
+            query=query,
+            params=params,
+            patterns=list(self.patterns),
+            rows=database.fetchall(query, params),
+        )
+
+
 class ConsultationStrategyCatalog:
     def __init__(self, strategies: list[ConsultationStrategy] | None = None) -> None:
         self._strategies = strategies or [
@@ -337,6 +472,11 @@ class ConsultationStrategyCatalog:
             CapacityConsultationStrategy(),
             ExecutionConsultationStrategy(),
             TraceabilityConsultationStrategy(),
+            OperatorProductivityConsultationStrategy(),
+            LineLoadConsultationStrategy(),
+            AuditActivityConsultationStrategy(),
+            ProductPerformanceConsultationStrategy(),
+            ShiftPerformanceConsultationStrategy(),
         ]
 
     def build_all(

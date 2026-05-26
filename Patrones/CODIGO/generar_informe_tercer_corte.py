@@ -8,7 +8,12 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Cm, Pt
 
 
-OUTPUT_PATH = Path(__file__).resolve().parent / "Informe_Tercer_Corte_MES_Software.docx"
+OUTPUT_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "Documentos 3 corte"
+    / "DOCUMENTOS"
+    / "Informe_Tercer_Corte_MES_Software.docx"
+)
 
 
 def configure_document(document: Document) -> None:
@@ -99,54 +104,36 @@ def build_document() -> None:
     add_paragraph(document, "Proyecto: Sistema de Control de Producción (MES)", center=True)
     add_paragraph(document, f"Fecha de elaboración: {datetime.now().strftime('%Y-%m-%d')}", center=True)
     document.add_page_break()
-
-    add_heading(document, "1. Introducción")
+    add_heading(document, "1. Introduccion")
     add_paragraph(
         document,
-        "El presente documento expone la evolución del proyecto académico Sistema de Control de Producción "
-        "(MES) hacia una propuesta más cercana a software real. Durante los cortes anteriores el trabajo se "
-        "centró en comprender y demostrar patrones de software desde una perspectiva conceptual y funcional. "
-        "En este último corte se incorporan elementos propios de una solución escalable, tales como base de "
-        "datos, usuarios, seguridad mínima, persistencia de resultados, trazabilidad operativa y consultas con "
-        "filtros por fecha, hora, turno, línea y estado.",
+        "El presente documento describe la evolucion del Sistema de Control de Produccion (MES) hacia una propuesta mas cercana a un producto de software utilizable, defendible y con valor para un posible comprador. El proyecto deja de centrarse solo en la demostracion academica de patrones y pasa a mostrar como una solucion MES puede registrar operaciones, proteger acceso, conservar evidencia y apoyar decisiones reales de planta.",
     )
     add_paragraph(
         document,
-        "El valor del proyecto ya no radica únicamente en mostrar clases que cumplen con un patrón de diseño, "
-        "sino en evidenciar cómo dichas decisiones arquitectónicas resuelven problemas concretos dentro del "
-        "dominio MES: planificación de órdenes, ejecución de producción, integración con sistemas legacy, "
-        "auditoría, telemetría, control de acceso, transición de estados y análisis de consultas.",
+        "La propuesta integra persistencia, seguridad minima, trazabilidad operativa y un paquete de 10 consultas de negocio orientadas a capacidad, cumplimiento, integracion, desempeno, portafolio de productos y control operativo. Esto permite sustentar no solo como esta construido el sistema, sino por que seria util adoptarlo dentro de un contexto productivo.",
     )
-
-    add_heading(document, "2. Justificación del escalamiento")
+    add_heading(document, "2. Justificacion del escalamiento")
     add_paragraph(
         document,
-        "Aunque la versión funcional previa del proyecto ya permitía demostrar el flujo end-to-end de una orden "
-        "de producción, la evaluación del tercer corte exige acercar la solución a un escenario de software "
-        "utilizable y defendible. En ese contexto, surgió la necesidad de incorporar persistencia, control de "
-        "usuarios, seguridad básica y consultas de negocio mejor definidas. Adicionalmente, se atendió la "
-        "recomendación docente de enriquecer las consultas con filtros temporales y operativos, de modo que el "
-        "sistema no solo simule resultados, sino que almacene y recupere información con mayor utilidad.",
+        "Para que el proyecto tenga valor ante una persona interesada en adquirir o adoptar la solucion, no basta con ejecutar una orden de produccion de principio a fin. El sistema debe responder preguntas concretas sobre demanda, carga, capacidad, eficiencia, productos, turnos, operadores, trazabilidad y seguridad. Por ello se fortalecio la capa de persistencia, se controlaron accesos y se redefinio el bloque analitico para que las consultas entreguen informacion util para tomar decisiones y no solo evidencia academica.",
     )
-
     add_heading(document, "3. Alcance del proyecto")
     add_paragraph(
         document,
-        "El alcance de esta fase comprende la transformación del proyecto en una base de software funcional "
-        "orientada a la gestión de órdenes MES, manteniendo la coherencia con los patrones de software "
-        "trabajados en la asignatura.",
+        "El alcance de esta fase comprende la transformacion del proyecto en una base de software funcional orientada a la gestion de ordenes MES, manteniendo la coherencia con los patrones de software trabajados en la asignatura y fortaleciendo el valor practico de la solucion.",
     )
     for item in [
-        "Registrar, cargar y reutilizar plantillas de producción para distintas líneas y tipos de máquina.",
-        "Ejecutar órdenes de producción con trazabilidad desde la planificación hasta el cierre.",
-        "Persistir usuarios, órdenes, historial de estados, telemetría, auditoría y lotes de consultas en SQLite.",
-        "Aplicar autenticación mínima con protección de contraseñas mediante hash y salt.",
-        "Restringir acceso a reportes y consultas según rol y línea autorizada.",
-        "Generar y almacenar consultas filtrables por fecha, hora, turno, línea, producto, protocolo y estado.",
+        "Registrar, cargar y reutilizar plantillas de produccion para distintas lineas y tipos de maquina.",
+        "Ejecutar ordenes de produccion con trazabilidad desde la planificacion hasta el cierre.",
+        "Persistir usuarios, ordenes, historial de estados, telemetria, auditoria y lotes de consultas en SQLite.",
+        "Aplicar autenticacion minima con proteccion de contrasenas mediante hash y salt.",
+        "Restringir acceso a reportes y consultas segun rol y linea autorizada.",
+        "Generar y almacenar 10 consultas de negocio filtrables por fecha, hora, turno, linea, producto, protocolo, usuario y estado.",
+        "Presentar evidencia util para evaluar capacidad, cumplimiento, portafolio, seguridad, trazabilidad e integracion operativa.",
         "Integrar patrones creacionales, estructurales y de comportamiento en un mismo flujo de negocio.",
     ]:
         add_bullet(document, item)
-
     add_heading(document, "4. Fuera de alcance")
     for item in [
         "Despliegue del sistema en ambiente productivo web o móvil.",
@@ -156,28 +143,24 @@ def build_document() -> None:
         "Analítica predictiva, reportería BI o dashboards en tiempo real con herramientas externas.",
     ]:
         add_bullet(document, item)
-
     add_heading(document, "5. Objetivos")
     add_heading(document, "5.1 Objetivo general", level=2)
     add_paragraph(
         document,
-        "Desarrollar la evolución del Sistema de Control de Producción MES hacia una solución de software más "
-        "escalable, segura y trazable, mediante la integración de persistencia, usuarios, consultas filtradas y "
-        "patrones de software alineados con el flujo operativo del proceso productivo.",
+        "Desarrollar la evolucion del Sistema de Control de Produccion MES hacia una solucion de software escalable, segura, trazable y orientada a la toma de decisiones, integrando persistencia, usuarios, consultas de negocio y patrones de software alineados con el flujo operativo del proceso productivo.",
     )
-    add_heading(document, "5.2 Objetivos específicos", level=2)
+    add_heading(document, "5.2 Objetivos especificos", level=2)
     for item in [
-        "Implementar una base de datos ligera para persistir la información operativa y analítica del sistema.",
-        "Gestionar usuarios y permisos mínimos para controlar el acceso a órdenes, líneas y reportes.",
-        "Aplicar el patrón State para modelar el ciclo de vida de la orden de producción.",
-        "Aplicar el patrón Observer para notificar y auditar cambios de estado sin acoplar la lógica principal.",
-        "Integrar una interfaz gráfica profesional que unifique autenticación, operación, consultas y evidencias.",
-        "Optimizar las consultas del proyecto mediante filtros por fecha, hora, turno, línea, protocolo y estado.",
-        "Persistir lotes de consultas para fortalecer la trazabilidad y la defensa del sistema como software.",
-        "Documentar el alcance, los resultados y el papel de cada patrón dentro del proyecto.",
+        "Implementar una base de datos ligera para persistir la informacion operativa y analitica del sistema.",
+        "Gestionar usuarios y permisos minimos para controlar el acceso a ordenes, lineas y reportes.",
+        "Aplicar el patron State para modelar el ciclo de vida de la orden de produccion.",
+        "Aplicar el patron Observer para notificar y auditar cambios de estado sin acoplar la logica principal.",
+        "Integrar una interfaz grafica profesional que unifique autenticacion, operacion, consultas y evidencias.",
+        "Consolidar un portafolio de 10 consultas de negocio que permita demostrar valor operativo y comercial del sistema MES.",
+        "Persistir lotes de consultas para fortalecer la trazabilidad analitica y la defensa del sistema como producto de software.",
+        "Documentar el alcance, los resultados y el papel de cada patron dentro del proyecto.",
     ]:
         add_bullet(document, item)
-
     add_heading(document, "6. Descripción general de la solución")
     add_paragraph(
         document,
@@ -189,7 +172,6 @@ def build_document() -> None:
         "Finalmente, los módulos de patrones conservan la demostración arquitectónica del proyecto y la conectan "
         "con los requerimientos reales de la aplicación.",
     )
-
     add_heading(document, "7. Componentes principales del software")
     add_table(
         document,
@@ -204,7 +186,6 @@ def build_document() -> None:
             ["mes_functional_app.py", "Base funcional previa sobre la cual se mantiene el flujo de patrones del proyecto."],
         ],
     )
-
     add_heading(document, "8. Persistencia, base de datos y seguridad mínima")
     add_paragraph(
         document,
@@ -233,28 +214,27 @@ def build_document() -> None:
         "producción. Este nivel de seguridad no pretende cubrir un entorno empresarial completo, pero sí "
         "constituye un avance coherente respecto a una práctica puramente teórica.",
     )
-
-    add_heading(document, "9. Consultas de negocio y mejora analítica")
+    add_heading(document, "9. Consultas de negocio y mejora analitica")
     add_paragraph(
         document,
-        "Una de las observaciones principales sobre la fase previa del proyecto fue la necesidad de mejorar las "
-        "consultas para que su valor de negocio resultara más evidente. En respuesta a ello, la nueva versión "
-        "del sistema soporta filtros por fecha, hora, turno, línea, protocolo, usuario, producto y estado. "
-        "Adicionalmente, los lotes de consultas quedan almacenados en base de datos, lo que permite rastrear "
-        "quién las generó, cuándo se ejecutaron, bajo qué condiciones y cuántos registros devolvieron.",
+        "El bloque analitico del sistema fue reorganizado para responder preguntas que realmente ayuden a justificar la adopcion del MES. Las consultas ya no se limitan a mostrar datos operativos sueltos: ahora permiten explicar demanda, integracion tecnica, presion de capacidad, cumplimiento, trazabilidad, productividad, balance de lineas, seguridad, comportamiento del portafolio y diferencias entre turnos. Adicionalmente, cada lote de consultas queda persistido con filtros, parametros y muestra de resultados, lo que mejora la trazabilidad de la capa analitica.",
     )
     add_table(
         document,
         ["ID", "Consulta", "Utilidad"],
         [
-            ["SQ1", "Planificación de órdenes", "Recuperar órdenes registradas por fecha, hora, turno, línea y producto."],
-            ["SQ2", "Despacho técnico", "Verificar cómo se despacharon las órdenes y bajo qué protocolo industrial."],
-            ["SQ3", "Capacidad vs carga", "Comparar unidades planificadas frente a la capacidad disponible de planta."],
-            ["SQ4", "Ejecución y OEE", "Analizar producción real, paradas, eficiencia y estado de cierre."],
-            ["SQ5", "Trazabilidad y telemetría", "Relacionar historial, auditoría, telemetría y evidencia de seguridad."],
+            ["SQ1", "Demanda confirmada por orden y contexto", "Identificar que ordenes, productos y lineas concentraron la demanda registrada."],
+            ["SQ2", "Integracion operativa por protocolo", "Evidenciar soporte multi-protocolo y facilidad de integracion con entornos industriales."],
+            ["SQ3", "Capacidad disponible vs carga comprometida", "Mostrar si la demanda presiona la capacidad instalada y donde conviene balancear recursos."],
+            ["SQ4", "Cumplimiento de produccion y OEE", "Medir cumplimiento del plan, eficiencia real y tiempos de parada por orden."],
+            ["SQ5", "Trazabilidad y evidencia de cumplimiento", "Demostrar seguimiento end-to-end y evidencia util para calidad, auditoria y confianza operativa."],
+            ["SQ6", "Productividad por operador", "Comparar desempeno humano y detectar oportunidades de mejora operacional."],
+            ["SQ7", "Carga y utilizacion por linea", "Balancear lineas, priorizar recursos y detectar concentraciones de trabajo."],
+            ["SQ8", "Seguridad operativa y auditoria", "Probar control de accesos, rastreabilidad de acciones y gobierno operativo."],
+            ["SQ9", "Desempeno por producto", "Priorizar productos por volumen, cumplimiento y eficiencia para soportar decisiones de portafolio."],
+            ["SQ10", "Comparativo de desempeno por turno", "Detectar diferencias entre DAY y NIGHT para intervenir la operacion con mejor criterio."],
         ],
     )
-
     add_heading(document, "10. Patrones aplicados dentro del proyecto")
     add_table(
         document,
@@ -276,37 +256,27 @@ def build_document() -> None:
             ["Observer", "Comportamiento", "Notificar y auditar cambios de estado de la orden.", "Desacoplar reacciones del flujo principal."],
         ],
     )
-
     add_heading(document, "11. Resultados obtenidos")
     for item in [
-        "Se consolidó una interfaz profesional para autenticación, dashboard, operación y consultas del sistema MES.",
-        "Se implementó una base SQLite con persistencia de usuarios, órdenes, historial, telemetría, auditoría y lotes de consultas.",
-        "Se incorporó seguridad mínima basada en hash, salt, roles y líneas autorizadas.",
-        "Se mejoraron las consultas con filtros por fecha, hora, turno, línea, estado y protocolo.",
-        "Se almacenaron los lotes de consultas para fortalecer la trazabilidad analítica del sistema.",
+        "Se consolido una interfaz profesional para autenticacion, dashboard, operacion y consultas del sistema MES.",
+        "Se implemento una base SQLite con persistencia de usuarios, ordenes, historial, telemetria, auditoria y lotes de consultas.",
+        "Se incorporo seguridad minima basada en hash, salt, roles y lineas autorizadas.",
+        "Se reorganizo el bloque analitico en 10 consultas de negocio con mayor utilidad para operacion, seguimiento y sustentacion comercial.",
+        "Se almacenaron los lotes de consultas para fortalecer la trazabilidad analitica del sistema.",
         "Se integraron State y Observer como patrones de comportamiento alineados con las orientaciones del tercer corte.",
-        "Se mantuvo la demostración de los patrones previos sin perder la funcionalidad ya construida en cortes anteriores.",
-        "Se verificó el flujo principal mediante pruebas end-to-end del escalamiento del sistema.",
+        "Se mantuvo la demostracion de los patrones previos sin perder la funcionalidad ya construida en cortes anteriores.",
+        "Se verifico el flujo principal mediante pruebas end-to-end del escalamiento del sistema.",
     ]:
         add_bullet(document, item)
-
     add_heading(document, "12. Conclusiones")
     add_paragraph(
         document,
-        "La evolución del proyecto evidencia que los patrones de software no deben entenderse como ejercicios "
-        "aislados, sino como herramientas concretas para resolver problemas reales de diseño. En este caso, la "
-        "aplicación de los patrones permitió transformar una demostración funcional en una base de software con "
-        "persistencia, seguridad mínima, trazabilidad y consultas defendibles desde una perspectiva de negocio.",
+        "La evolucion del proyecto demuestra que los patrones de software aportan mas valor cuando se conectan con preguntas reales del negocio. En esta version, el MES no solo registra ordenes: tambien explica demanda, capacidad, cumplimiento, seguridad, trazabilidad y comportamiento del portafolio por medio de consultas defendibles desde una perspectiva operativa.",
     )
     add_paragraph(
         document,
-        "El proyecto resultante conserva el valor académico de la asignatura, pero al mismo tiempo incorpora "
-        "criterios propios de una solución informática: almacenamiento de información, gestión de usuarios, "
-        "control de acceso, historial de cambios, visualización de resultados y soporte a consultas. Esto "
-        "fortalece la sustentación técnica, ya que cada patrón puede explicarse tanto por su teoría como por su "
-        "aporte verificable dentro del sistema MES.",
+        "Desde la mirada de una persona que evaluara adquirir la solucion, el mayor avance consiste en que el sistema ya puede mostrar utilidad concreta: ayuda a entender donde esta la carga, como rinden las lineas y los turnos, que productos concentran el esfuerzo y que evidencia existe para auditar lo ocurrido. Eso hace que la propuesta sea mas argumentable, mas cercana a un caso real y mas facil de presentar como software con valor." ,
     )
-
     add_heading(document, "13. Recomendaciones y trabajo futuro")
     for item in [
         "Extender la gestión de turnos para permitir configuración paramétrica de horarios desde la interfaz.",
@@ -316,7 +286,6 @@ def build_document() -> None:
         "Conectar la persistencia actual con servicios externos o APIs industriales en una fase posterior.",
     ]:
         add_bullet(document, item)
-
     add_heading(document, "14. Cierre")
     add_paragraph(
         document,
@@ -327,6 +296,7 @@ def build_document() -> None:
         "ingeniería de software.",
     )
 
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     document.save(str(OUTPUT_PATH))
     print(f"Documento generado en: {OUTPUT_PATH}")
 

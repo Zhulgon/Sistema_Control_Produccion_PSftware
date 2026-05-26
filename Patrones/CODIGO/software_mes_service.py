@@ -48,7 +48,7 @@ def software_pattern_implementation_map() -> list[PatternImplementation]:
             pattern="Strategy",
             objective="Construir consultas persistentes con variantes intercambiables por tipo analitico.",
             module="src/software_mes_behavioral.py",
-            key_classes="ConsultationStrategy, PlanningConsultationStrategy, DispatchConsultationStrategy, CapacityConsultationStrategy, ExecutionConsultationStrategy, TraceabilityConsultationStrategy",
+            key_classes="ConsultationStrategy, PlanningConsultationStrategy, DispatchConsultationStrategy, CapacityConsultationStrategy, ExecutionConsultationStrategy, TraceabilityConsultationStrategy, OperatorProductivityConsultationStrategy, LineLoadConsultationStrategy, AuditActivityConsultationStrategy, StateSummaryConsultationStrategy, ShiftPerformanceConsultationStrategy",
             usage_point="generate_filtered_consultations(): strategy_catalog.build_all()",
         ),
         PatternImplementation(
@@ -491,24 +491,44 @@ class ScalableMESProject:
     def _consultation_metadata_map(self) -> dict[str, dict[str, str]]:
         return {
             "SQ1": {
-                "objective": "Consultar ordenes planificadas filtrando por fecha, hora, turno, linea y producto.",
-                "business_question": "¿Que ordenes quedaron planificadas en un rango de tiempo y bajo que contexto operativo?",
+                "objective": "Visualizar la demanda operativa registrada por orden, linea, turno y producto para respaldar la planificacion comercial.",
+                "business_question": "Que ordenes y productos concentraron la demanda confirmada en el periodo consultado?",
             },
             "SQ2": {
-                "objective": "Verificar como se despacharon las ordenes y que protocolo industrial se utilizo.",
-                "business_question": "¿Que despachos se realizaron en la linea y con que protocolo quedaron registrados?",
+                "objective": "Evidenciar como las ordenes se despacharon y que protocolos industriales soporta el sistema en la operacion real.",
+                "business_question": "Que lineas, maquinas y protocolos se utilizaron para integrar la ejecucion de las ordenes?",
             },
             "SQ3": {
-                "objective": "Comparar la carga planificada contra la capacidad total disponible de la planta.",
-                "business_question": "¿La orden consultada comprometio la capacidad disponible de la planta o de la linea?",
+                "objective": "Comparar unidades comprometidas contra capacidad disponible para justificar decisiones de balanceo o expansion.",
+                "business_question": "La demanda registrada presiona la capacidad disponible de la planta o de una linea especifica?",
             },
             "SQ4": {
-                "objective": "Revisar produccion real, tiempos de parada, OEE y estado final de la orden.",
-                "business_question": "¿Como termino la ejecucion de la orden en terminos de cumplimiento y eficiencia?",
+                "objective": "Medir cumplimiento del plan, tiempos de parada y eficiencia real de la ejecucion.",
+                "business_question": "Que tan bien se cumplio el plan de produccion y con que nivel de eficiencia opero cada orden?",
             },
             "SQ5": {
-                "objective": "Analizar la trazabilidad de eventos, cambios de estado y auditoria de seguridad.",
-                "business_question": "¿Que evidencia de telemetria, historial y seguridad quedo almacenada por orden?",
+                "objective": "Consolidar eventos, historial y auditoria para demostrar trazabilidad y cumplimiento operativo.",
+                "business_question": "Que evidencia deja el sistema para rastrear una orden de punta a punta?",
+            },
+            "SQ6": {
+                "objective": "Comparar aporte operativo por operador segun ordenes cerradas, volumen producido y eficiencia.",
+                "business_question": "Que operadores entregan mejor productividad y donde hay oportunidad de mejora?",
+            },
+            "SQ7": {
+                "objective": "Mostrar como se distribuye la demanda entre lineas para balancear carga y priorizar recursos.",
+                "business_question": "Que lineas concentran mas trabajo y como se esta utilizando la capacidad instalada?",
+            },
+            "SQ8": {
+                "objective": "Rastrear accesos y acciones relevantes para reforzar confianza, control y gobierno operativo.",
+                "business_question": "Que usuarios, ordenes o lineas presentan actividad auditada relevante en el periodo?",
+            },
+            "SQ9": {
+                "objective": "Comparar volumen, cumplimiento y eficiencia por producto para priorizar el portafolio operativo.",
+                "business_question": "Que productos mueven mas volumen y cuales presentan peor eficiencia o mayor desviacion?",
+            },
+            "SQ10": {
+                "objective": "Comparar rendimiento entre turnos usando volumen producido, paradas y eficiencia promedio.",
+                "business_question": "Que diferencias operativas hay entre DAY y NIGHT y donde conviene intervenir?",
             },
         }
 

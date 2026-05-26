@@ -201,3 +201,146 @@ def build_traceability_query(filters: QueryFilters) -> tuple[str, tuple[Any, ...
     builder.order_by("MAX(o.created_at) DESC")
     builder.limit(filters.limit)
     return builder.build()
+
+
+def build_operator_productivity_query(filters: QueryFilters) -> tuple[str, tuple[Any, ...]]:
+    builder = SQLQueryBuilder(
+        """
+        SELECT
+            operator_id,
+            operator_name,
+            COUNT(*) AS total_orders,
+            COALESCE(SUM(planned_units), 0) AS planned_units_total,
+            COALESCE(SUM(produced_units), 0) AS produced_units_total,
+            COALESCE(SUM(downtime_minutes), 0) AS downtime_minutes_total,
+            ROUND(AVG((produced_units * 100.0) / NULLIF(planned_units, 0)), 2) AS average_oee,
+            MAX(completed_at) AS last_completed_at
+        FROM orders
+        """
+    )
+    builder.where("completed_at IS NOT NULL")
+    _apply_order_filters(builder, filters, "completed_at")
+    builder.group_by("operator_id, operator_name")
+    builder.order_by("produced_units_total DESC, total_orders DESC")
+    return builder.build()
+
+
+def build_line_load_query(filters: QueryFilters) -> tuple[str, tuple[Any, ...]]:
+    builder = SQLQueryBuilder(
+        """
+        SELECT
+            production_line,
+            COUNT(*) AS total_orders,
+            COALESCE(SUM(planned_units), 0) AS planned_units_total,
+            COALESCE(SUM(produced_units), 0) AS produced_units_total,
+            COALESCE(SUM(downtime_minutes), 0) AS downtime_minutes_total,
+            ROUND(AVG((produced_units * 100.0) / NULLIF(planned_units, 0)), 2) AS average_oee,
+            MAX(completed_at) AS last_completed_at
+        FROM orders
+        """
+    )
+    _apply_order_filters(builder, filters, "created_at")
+    builder.group_by("production_line")
+    builder.order_by("planned_units_total DESC, total_orders DESC")
+    return builder.build()
+
+
+def build_audit_activity_query(filters: QueryFilters) -> tuple[str, tuple[Any, ...]]:
+    builder = SQLQueryBuilder(
+        """
+        SELECT
+            a.event_type,
+            a.username,
+            a.order_id,
+            COALESCE(a.production_line, o.production_line) AS production_line,
+            a.description,
+            a.created_at
+        FROM audit_events a
+        LEFT JOIN orders o ON a.order_id = o.order_id
+        """
+    )
+    if filters.order_id:
+        builder.where("a.order_id = ?", filters.order_id)
+    if filters.product_code:
+        builder.where("o.product_code = ?", filters.product_code)
+    if filters.production_line:
+        builder.where("COALESCE(a.production_line, o.production_line) = ?", filters.production_line.upper())
+    if filters.shift:
+        builder.where("o.shift = ?", filters.shift.upper())
+    if filters.protocol:
+        builder.where("o.protocol = ?", filters.protocol.lower())
+    if filters.operator_id:
+        builder.where("o.operator_id = ?", filters.operator_id)
+    if filters.state:
+        builder.where("o.state = ?", filters.state.upper())
+    if filters.requested_by:
+        builder.where("a.username = ?", filters.requested_by.lower())
+    builder.date_range("a.created_at", filters.date_from, filters.date_to)
+    builder.hour_range("a.created_at", filters.hour_from, filters.hour_to)
+    builder.limit(filters.limit)
+    builder.order_by("a.created_at DESC")
+    return builder.build()
+
+
+def build_state_summary_query(filters: QueryFilters) -> tuple[str, tuple[Any, ...]]:
+    builder = SQLQueryBuilder(
+        """
+        SELECT
+            state,
+            COUNT(*) AS total_orders,
+            COALESCE(SUM(planned_units), 0) AS planned_units_total,
+            COALESCE(SUM(produced_units), 0) AS produced_units_total,
+            COALESCE(SUM(downtime_minutes), 0) AS downtime_minutes_total,
+            MAX(completed_at) AS last_completed_at
+        FROM orders
+        """
+    )
+    _apply_order_filters(builder, filters, "created_at")
+    builder.group_by("state")
+    builder.order_by("total_orders DESC, state ASC")
+    return builder.build()
+
+
+def build_product_performance_query(filters: QueryFilters) -> tuple[str, tuple[Any, ...]]:
+    builder = SQLQueryBuilder(
+        """
+        SELECT
+            product_code,
+            product_name,
+            COUNT(*) AS total_orders,
+            COALESCE(SUM(planned_units), 0) AS planned_units_total,
+            COALESCE(SUM(produced_units), 0) AS produced_units_total,
+            COALESCE(SUM(planned_units), 0) - COALESCE(SUM(produced_units), 0) AS gap_units_total,
+            ROUND((COALESCE(SUM(produced_units), 0) * 100.0) / NULLIF(COALESCE(SUM(planned_units), 0), 0), 2) AS fulfillment_rate,
+            COALESCE(SUM(downtime_minutes), 0) AS downtime_minutes_total,
+            ROUND(AVG((produced_units * 100.0) / NULLIF(planned_units, 0)), 2) AS average_oee,
+            MAX(completed_at) AS last_completed_at
+        FROM orders
+        """
+    )
+    builder.where("completed_at IS NOT NULL")
+    _apply_order_filters(builder, filters, "completed_at")
+    builder.group_by("product_code, product_name")
+    builder.order_by("produced_units_total DESC, average_oee ASC, product_code ASC")
+    return builder.build()
+
+
+def build_shift_performance_query(filters: QueryFilters) -> tuple[str, tuple[Any, ...]]:
+    builder = SQLQueryBuilder(
+        """
+        SELECT
+            shift,
+            COUNT(*) AS total_orders,
+            COALESCE(SUM(planned_units), 0) AS planned_units_total,
+            COALESCE(SUM(produced_units), 0) AS produced_units_total,
+            COALESCE(SUM(downtime_minutes), 0) AS downtime_minutes_total,
+            ROUND(AVG((produced_units * 100.0) / NULLIF(planned_units, 0)), 2) AS average_oee,
+            MAX(completed_at) AS last_completed_at
+        FROM orders
+        """
+    )
+    builder.where("completed_at IS NOT NULL")
+    _apply_order_filters(builder, filters, "completed_at")
+    builder.group_by("shift")
+    builder.order_by("average_oee DESC, total_orders DESC")
+    return builder.build()

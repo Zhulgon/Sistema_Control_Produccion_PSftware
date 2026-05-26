@@ -26,12 +26,53 @@ from software_mes_queries import QueryFilters
 from software_mes_service import ScalableMESProject
 
 
+class VerticalScrolledPanel(ttk.Frame):
+    def __init__(
+        self,
+        parent: ttk.Widget,
+        *,
+        style: str = "App.TFrame",
+        padding: int | tuple[int, ...] = 0,
+        canvas_background: str = "#edf2f7",
+    ) -> None:
+        super().__init__(parent, style=style)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+
+        self._canvas = tk.Canvas(
+            self,
+            background=canvas_background,
+            highlightthickness=0,
+            borderwidth=0,
+        )
+        self._scrollbar = ttk.Scrollbar(self, orient=tk.VERTICAL, command=self._canvas.yview)
+        self._canvas.configure(yscrollcommand=self._scrollbar.set)
+
+        self._canvas.grid(row=0, column=0, sticky="nsew")
+        self._scrollbar.grid(row=0, column=1, sticky="ns", padx=(8, 0))
+
+        self.body = ttk.Frame(self._canvas, style=style, padding=padding)
+        self._body_window = self._canvas.create_window((0, 0), window=self.body, anchor="nw")
+
+        self.body.bind("<Configure>", self._sync_scroll_region)
+        self._canvas.bind("<Configure>", self._resize_body)
+
+    def reset_view(self) -> None:
+        self._canvas.yview_moveto(0)
+
+    def _sync_scroll_region(self, _event: tk.Event) -> None:
+        self._canvas.configure(scrollregion=self._canvas.bbox("all"))
+
+    def _resize_body(self, event: tk.Event) -> None:
+        self._canvas.itemconfigure(self._body_window, width=event.width)
+
+
 class MESSoftwareControlCenter(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title("MES Control Center | Software Edition")
-        self.geometry("1520x920")
-        self.minsize(1320, 780)
+        self.geometry("1440x860")
+        self.minsize(1180, 680)
         self.configure(background="#edf2f7")
 
         self.service = ScalableMESProject()
@@ -127,7 +168,7 @@ class MESSoftwareControlCenter(tk.Tk):
 
         self.sidebar = ttk.Frame(self, style="Sidebar.TFrame", padding=22)
         self.sidebar.grid(row=0, column=0, sticky="nsew")
-        self.sidebar.configure(width=320)
+        self.sidebar.configure(width=290)
         self.sidebar.grid_propagate(False)
         self._build_sidebar()
 
@@ -280,7 +321,10 @@ class MESSoftwareControlCenter(tk.Tk):
         ):
             self.recent_orders_tree.heading(key, text=title)
             self.recent_orders_tree.column(key, width=width, anchor="center")
+        recent_orders_scroll = ttk.Scrollbar(orders_card, orient=tk.VERTICAL, command=self.recent_orders_tree.yview)
+        self.recent_orders_tree.configure(yscrollcommand=recent_orders_scroll.set)
         self.recent_orders_tree.grid(row=1, column=0, sticky="nsew", pady=(12, 0))
+        recent_orders_scroll.grid(row=1, column=1, sticky="ns", pady=(12, 0))
 
         audit_card = ttk.Frame(body, style="Card.TFrame", padding=16)
         audit_card.grid(row=0, column=1, sticky="nsew")
@@ -296,10 +340,10 @@ class MESSoftwareControlCenter(tk.Tk):
         self.order_tab.columnconfigure(1, weight=6)
         self.order_tab.rowconfigure(0, weight=1)
 
-        form_panel = ttk.Frame(self.order_tab, style="App.TFrame")
-        form_panel.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
+        self.order_form_scroll = VerticalScrolledPanel(self.order_tab, style="App.TFrame")
+        self.order_form_scroll.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
+        form_panel = self.order_form_scroll.body
         form_panel.columnconfigure(0, weight=1)
-        form_panel.rowconfigure(2, weight=1)
 
         template_card = ttk.LabelFrame(form_panel, text="Plantillas y producto", style="Section.TLabelframe", padding=16)
         template_card.grid(row=0, column=0, sticky="ew")
@@ -362,6 +406,13 @@ class MESSoftwareControlCenter(tk.Tk):
             command=self._seed_demo_order,
         ).pack(side=tk.LEFT, padx=(8, 0))
 
+        ttk.Label(
+            form_panel,
+            text="Usa la barra lateral de este panel si tu pantalla no alcanza a mostrar el formulario completo.",
+            style="CardHint.TLabel",
+            wraplength=520,
+        ).grid(row=3, column=0, sticky="w", pady=(10, 0))
+
         output_panel = ttk.Frame(self.order_tab, style="App.TFrame")
         output_panel.grid(row=0, column=1, sticky="nsew")
         output_panel.columnconfigure(0, weight=1)
@@ -397,30 +448,37 @@ class MESSoftwareControlCenter(tk.Tk):
         for idx in range(6):
             filter_card.columnconfigure(idx, weight=1)
 
-        self._labeled_entry(filter_card, "Order ID", self.filter_order_id_var, 0, 0)
-        self._labeled_entry(filter_card, "Producto", self.filter_product_code_var, 0, 1)
-        self._labeled_entry(filter_card, "Linea", self.filter_line_var, 0, 2)
-        self._labeled_combo(filter_card, "Turno", self.filter_shift_var, ("", "DAY", "NIGHT"), 0, 3)
-        self._labeled_combo(filter_card, "Protocolo", self.filter_protocol_var, ("", "opcua", "modbus"), 0, 4)
-        self._labeled_entry(filter_card, "Operator ID", self.filter_operator_id_var, 0, 5)
+        ttk.Label(
+            filter_card,
+            text="Bloque analitico activo: el sistema genera las 10 consultas SQ1-SQ10 definidas para la sustentacion.",
+            style="CardHint.TLabel",
+            wraplength=1100,
+        ).grid(row=0, column=0, columnspan=6, sticky="w", pady=(0, 10))
+
+        self._labeled_entry(filter_card, "Order ID", self.filter_order_id_var, 1, 0)
+        self._labeled_entry(filter_card, "Producto", self.filter_product_code_var, 1, 1)
+        self._labeled_entry(filter_card, "Linea", self.filter_line_var, 1, 2)
+        self._labeled_combo(filter_card, "Turno", self.filter_shift_var, ("", "DAY", "NIGHT"), 1, 3)
+        self._labeled_combo(filter_card, "Protocolo", self.filter_protocol_var, ("", "opcua", "modbus"), 1, 4)
+        self._labeled_entry(filter_card, "Operator ID", self.filter_operator_id_var, 1, 5)
 
         self._labeled_combo(
             filter_card,
             "Estado",
             self.filter_state_var,
             ("", "CREATED", "PLANNED", "DISPATCHED", "RUNNING", "COMPLETED"),
-            2,
+            3,
             0,
         )
-        self._labeled_entry(filter_card, "Solicitado por", self.filter_requested_by_var, 2, 1)
-        self._labeled_entry(filter_card, "Fecha desde", self.filter_date_from_var, 2, 2)
-        self._labeled_entry(filter_card, "Fecha hasta", self.filter_date_to_var, 2, 3)
-        self._labeled_entry(filter_card, "Hora desde", self.filter_hour_from_var, 2, 4)
-        self._labeled_entry(filter_card, "Hora hasta", self.filter_hour_to_var, 2, 5)
-        self._labeled_entry(filter_card, "Limite", self.filter_limit_var, 4, 0)
+        self._labeled_entry(filter_card, "Solicitado por", self.filter_requested_by_var, 3, 1)
+        self._labeled_entry(filter_card, "Fecha desde", self.filter_date_from_var, 3, 2)
+        self._labeled_entry(filter_card, "Fecha hasta", self.filter_date_to_var, 3, 3)
+        self._labeled_entry(filter_card, "Hora desde", self.filter_hour_from_var, 3, 4)
+        self._labeled_entry(filter_card, "Hora hasta", self.filter_hour_to_var, 3, 5)
+        self._labeled_entry(filter_card, "Limite", self.filter_limit_var, 5, 0)
 
         action_row = ttk.Frame(filter_card, style="Card.TFrame")
-        action_row.grid(row=4, column=1, columnspan=5, sticky="e", pady=(16, 0))
+        action_row.grid(row=7, column=1, columnspan=5, sticky="e", pady=(16, 0))
         ttk.Button(action_row, text="Limpiar filtros", style="Ghost.TButton", command=self._reset_filters).pack(
             side=tk.RIGHT
         )
@@ -459,7 +517,10 @@ class MESSoftwareControlCenter(tk.Tk):
         ):
             self.consultation_tree.heading(key, text=title)
             self.consultation_tree.column(key, width=width, anchor="center" if key in {"id", "rows"} else "w")
+        consultation_tree_scroll = ttk.Scrollbar(list_card, orient=tk.VERTICAL, command=self.consultation_tree.yview)
+        self.consultation_tree.configure(yscrollcommand=consultation_tree_scroll.set)
         self.consultation_tree.grid(row=1, column=0, sticky="nsew", pady=(12, 0))
+        consultation_tree_scroll.grid(row=1, column=1, sticky="ns", pady=(12, 0))
 
         detail_card = ttk.Frame(body, style="Card.TFrame", padding=16)
         detail_card.grid(row=0, column=1, sticky="nsew")
@@ -491,7 +552,10 @@ class MESSoftwareControlCenter(tk.Tk):
         self.pattern_tree.heading("module", text="Modulo")
         self.pattern_tree.column("pattern", width=150, anchor="center")
         self.pattern_tree.column("module", width=260, anchor="w")
+        pattern_tree_scroll = ttk.Scrollbar(pattern_list_card, orient=tk.VERTICAL, command=self.pattern_tree.yview)
+        self.pattern_tree.configure(yscrollcommand=pattern_tree_scroll.set)
         self.pattern_tree.grid(row=1, column=0, sticky="nsew", pady=(12, 0))
+        pattern_tree_scroll.grid(row=1, column=1, sticky="ns", pady=(12, 0))
 
         detail_card = ttk.Frame(self.pattern_tab, style="Card.TFrame", padding=16)
         detail_card.grid(row=0, column=1, sticky="nsew")
@@ -650,6 +714,7 @@ class MESSoftwareControlCenter(tk.Tk):
         self.status_var.set("Se cargaron datos demo para una nueva ejecucion.")
 
     def _reset_order_form(self) -> None:
+        self.order_form_scroll.reset_view()
         self.template_key_var.set("")
         self.template_name_var.set("")
         self.machine_type_var.set("cnc")
@@ -860,7 +925,9 @@ class MESSoftwareControlCenter(tk.Tk):
             return
 
         self._populate_consultation_tree()
-        self.status_var.set("Consultas filtradas generadas desde la base de datos persistente.")
+        self.status_var.set(
+            f"Consultas filtradas generadas correctamente: {len(self.current_consultations)} resultados SQ registrados."
+        )
         self.notebook.select(self.consultation_tab)
 
     def _load_persisted_consultation_history(self) -> None:
